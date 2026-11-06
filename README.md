@@ -54,7 +54,7 @@ After the maintainer publishes the package, OpenCode can install it directly fro
 
 For **global** activation, put the configuration in `~/.config/opencode/opencode.jsonc`. For **project** activation, put it in `<project>/opencode.jsonc` or `<project>/.opencode/opencode.jsonc`. Merge entries with existing configuration; do not duplicate the plugin. OpenCode's managed configuration and rule precedence still apply. Keep independent hard-deny rules for operations that must never run.
 
-This workspace does not publish to npm. The registry lookup on 2026-11-06 returned 404 for this package name. Availability is not ownership and must be rechecked before release. If occupied later, choose an owned scope such as `@YOUR_SCOPE/opencode-censor` and update `package.json` and config references.
+This workspace does not publish to npm. The registry lookup on 2026-11-07 returned 404 for this package name. Availability is not ownership and must be rechecked before release. If occupied later, choose an owned scope such as `@YOUR_SCOPE/opencode-censor` and update `package.json` and config references.
 
 ## Install local source or a tarball
 

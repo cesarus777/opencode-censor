@@ -1,5 +1,20 @@
 # Verification record
 
+## Release readiness recheck — 2026-11-07
+
+Rechecked commit `cb135f0` on 2026-11-07, before the documentation updates below. Bun 1.3.11 and Node 26.11.1 were used; the default Bun remains 1.1.34 and must not be used for release checks.
+
+- Frozen installation passed without dependency changes. Typecheck, formatting, all 95 deterministic tests (205 assertions), and build passed.
+- The combined `bun run check` stopped at the sandboxed package subprocess, which produced no npm pack report. The separately escalated package check passed: 45 archive files inspected, isolated installation with lifecycle scripts disabled, and public ESM imports in Bun and Node.
+- The installed-archive native smoke passed outside the sandbox with host 2.2.5: source correlation, allow/ask/error/deny, tool completion, timeout and late reply, ten concurrent requests with eight admitted reviews, and reload cleanup. Provider abort observations remained zero. The sandboxed attempt failed the version preflight after the host could not open its normal log path; that attempt is not a pass.
+- A fresh registry audit still reports the same two moderate transitive advisories described below. No dependency override or SDK upgrade was applied. The operator explicitly chose to keep the release blocked pending a dependency fix; the remaining risk is not accepted.
+- `npm view opencode-censor name version maintainers --json` returned E404. An escalated `npm whoami --json` authenticated as `cesarus777`; the sandboxed account lookup failed DNS resolution. The account and available name are confirmed, but ownership of an unpublished name cannot be established in advance and publish permission was not exercised.
+- The private reporting API and advisory creation page could not be fetched; reporting remains unverified. Remote GitHub Actions results were not verified.
+
+The operator explicitly deferred real-reviewer, native scanner, interactive approval, and private vulnerability-reporting checks until after release: “No, I'll check it myself after release.” These are deferred checks, not passes, and production acceptance remains incomplete. This decision does not resolve the dependency advisories or reserve the npm name. No publication, push, tag, or release was performed.
+
+## Previous verification — 2026-11-06
+
 Environment: Linux x64, 2026-11-06. Target SDK and native CLI: **2.2.5**. Development uses Bun **1.3.11** from `/tmp/guard-terminal-runtime/node_modules/@oven/bun-linux-x64/bin/bun`; the default system Bun is 1.1.34 and is unsuitable. Node **26.11.1**, TypeScript 5.9.3, Prettier 3.6.2. The existing system OpenCode 2.1.2 was not modified.
 
 The final readiness checks are recorded below; unconfirmed and blocked entries are not passes. The full acceptance criteria are in [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md).

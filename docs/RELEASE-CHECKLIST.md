@@ -1,7 +1,9 @@
 # First release acceptance checklist
 
 Target: `opencode-censor@0.1.0`, OpenCode and `@opencode/plugin` **2.2.5**.
-This checklist defines acceptance; unchecked items are release blockers, not implied passes. Record date, exact versions, results and restrictions in [VERIFICATION.md](VERIFICATION.md).
+This checklist defines acceptance; unchecked items are release blockers unless explicitly deferred below, and are never implied passes. Record date, exact versions, results and restrictions in [VERIFICATION.md](VERIFICATION.md).
+
+On 2026-11-07, the operator deferred real-reviewer, native scanner, interactive approval, and private vulnerability-reporting checks until after release. Those items remain unchecked for tracking; this exception permits their deferral for the release candidate and does not establish production acceptance. Dependency-risk acceptance remains unresolved. npm authentication confirms `cesarus777` and the package lookup returns E404; availability must be checked again immediately before publication. See the latest [readiness recheck](VERIFICATION.md#release-readiness-recheck--2026-11-07).
 
 ## Reproducible build and artifact
 
@@ -11,6 +13,9 @@ This checklist defines acceptance; unchecked items are release blockers, not imp
 - [x] Install that archive outside the checkout and import its public export in Bun and Node.
 - [x] Audit the locked dependency graph; triage advisories and record remaining supply-chain risks. Two moderate transitive advisories remain documented in VERIFICATION.md; a completed audit is not acceptance of those findings.
 - [ ] Resolve the dependency advisories or obtain explicit maintainer acceptance of the remaining risk.
+
+  On 2026-11-07, the operator chose “Keep release blocked pending a dependency fix.” Risk acceptance is not granted; publication must wait for a validated dependency fix.
+
 - [x] Confirm repository, homepage and issue metadata against the supplied repository and Git origin.
 - [ ] Enable and privately test the maintainer's vulnerability reporting route.
 
