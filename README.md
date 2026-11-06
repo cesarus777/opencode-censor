@@ -156,7 +156,7 @@ Instructions and JSON data are visibly separated. The current text API accepts a
 
 Each evaluation owns its deadline and cancellation controller. Unload settles pending evaluations as `ask`, clears correlation state, and disposes registrations. Setup failure disposes registrations already acquired. Late results and late rejections cannot mutate a resolved permission event and do not create unhandled promise rejections.
 
-The 2.2.5 Promise API types expose request cancellation, but the local Promise adapter ignores generation request options. We pass the signal for future compatibility and independently enforce the deadline. A timed-out request may continue consuming provider resources. At most eight active or still-unsettled review tasks are admitted per plugin instance; additional evaluations ask immediately. If all eight hang forever, reviews keep asking until reload. There is no retry, queue, coalescing, persistent storage, or approval cache.
+The 2.2.5 Promise API types expose request cancellation, but the local Promise adapter ignores generation request options. We pass the signal for future compatibility and independently enforce the deadline. A timed-out request may continue consuming provider resources. At most eight active or still-unsettled review tasks are admitted per plugin instance; additional evaluations ask immediately. If all eight hang forever, reviews keep asking until reload. The plugin adds no retry, queue, coalescing, persistent storage, or approval cache; native provider retry behavior remains controlled by OpenCode.
 
 Correlation is keyed by session/message/call, capped at 256 entries, expires logically after 60 seconds, and is removed on tool completion or unload. Expired entries are pruned on subsequent tool calls. Expired or missing data always asks. Correlation state is temporary memory, not an approval cache.
 
@@ -202,17 +202,20 @@ bun run test:package
 
 `bun:test` provides deterministic TypeScript mocks, fake provider responses and bounded real timers without another runner dependency. Tests never execute the shell strings being reviewed. Integration tests load the real SDK entrypoint against a mocked host; they cover hook registration, source correlation, effects, provider failures, context filtering, explicit deny preservation, concurrency and cleanup. These are not live provider integration tests.
 
-`test:package` creates an npm archive, installs it offline into an isolated consumer using the populated Bun cache, and imports the public export. It requires subprocess execution and an available npm executable. Source maps/declarations are included; tests and probe code are not published. CI runs formatting, typecheck, tests, build and package validation.
+`test:package` creates an npm archive, installs it with npm and lifecycle scripts disabled into an isolated consumer, and imports the public export through Bun and Node. Installation may access the registry for dependencies. It requires subprocess execution and an available npm executable. Source maps/declarations are included; tests and probe code are not published. CI runs formatting, typecheck, tests, build and package validation.
 
 Optional native host probe:
 
 ```sh
+bun run build
 OPENCODE_BIN=/absolute/path/to/opencode bun run test:live
 ```
 
-This launches an isolated OpenCode 2.2.5 server without provider credentials. A test-only driver asserts permissions and verifies package loading, explicit-deny hook bypass, scanner-only fallback, and creation of a real native approval request. It executes no shell command and approves no request. It requires permission to spawn the host and bind a loopback port. Full safe-command auto-allow, model-failure escalation and interactive UI behavior still need a separate credentialed acceptance run. The recorded attempt in this workspace was blocked by the sandbox's loopback `EPERM` restriction.
+This installs the npm archive into an isolated consumer and starts exactly OpenCode 2.2.5 with synthetic credentials and a controlled loopback HTTP provider. The test driver replaces the shell tool with permission assertions; no reviewed command is executed and no pending request is approved. It checks native source hooks, allow/ask/error/deny, tool completion, delayed and late replies, eight-request capacity, concurrent requests and reload. It requires subprocess and loopback access. The native CI job pins Bun 1.3.11 and OpenCode 2.2.5 and needs no external provider credentials.
 
-Before publishing, finish that acceptance run, review [verification](docs/VERIFICATION.md), audit dependencies, establish a hosted repository and private vulnerability-reporting channel, add their npm metadata, confirm name ownership with `npm view opencode-censor`, inspect `npm pack --dry-run`, and run `bun run check`. No repository URL or maintainer identity is fabricated.
+The replacement tool does not validate the built-in shell scanner/executor. Real reviewer and interactive native-client acceptance remain mandatory; follow the [release checklist](docs/RELEASE-CHECKLIST.md) and record evidence in [verification](docs/VERIFICATION.md). Provider cancellation is limited by the pinned SDK adapter even when native permission waiting is bounded.
+
+Source and non-sensitive bug reports: [cesarus777/opencode-censor](https://github.com/cesarus777/opencode-censor). Security reports must follow [SECURITY.md](SECURITY.md). Before publishing, complete the checklist, triage dependency advisories, verify the private reporting channel, confirm npm ownership and inspect/install the final archive. `npm view` checks availability, not ownership. See [CHANGELOG.md](CHANGELOG.md) for the unreleased 0.1.0 changes.
 
 Only a maintainer with explicit publication authorization should run:
 
