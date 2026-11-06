@@ -1,0 +1,31 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    {
+      "package": "opencode-censor",
+      "options": {
+        "enabled": true,
+        "model": { "providerID": "anthropic", "id": "MODEL_ID" },
+        "mode": "balanced",
+        "fallback": "ask",
+        "timeoutMs": 15000,
+        "context": {
+          "enabled": false,
+          "maxMessages": 5,
+          "maxCharacters": 6000,
+        },
+        "logging": {
+          "enabled": true,
+          "level": "info",
+          "includeCommands": false,
+        },
+        "cache": { "enabled": false },
+      },
+    },
+  ],
+  "permissions": [
+    { "action": "shell", "resource": "*", "effect": "ask" },
+    { "action": "shell", "resource": "git push *", "effect": "deny" },
+    { "action": "external_directory", "resource": "*", "effect": "ask" },
+  ],
+}

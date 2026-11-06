@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tgz
+coverage/
+.env*
+.smoke/
+.smoke-*/
+.agents/
+.codex/
+.aws/

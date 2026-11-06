@@ -1,0 +1,84 @@
+import type { Config } from "../config/schema.js";
+import { parseConfig } from "../config/schema.js";
+import { audit, type AuditRecord } from "../observability/logger.js";
+import { ask, type PermissionEvent, type Reviewer } from "../types.js";
+import { ReviewEngine } from "./review-engine.js";
+
+export interface GateDependencies {
+  options: unknown;
+  reviewer: (config: Config) => Reviewer;
+  command: (event: PermissionEvent) => string | undefined;
+  context: (sessionID: string, config: Config) => Promise<readonly string[]>;
+  log?: (record: AuditRecord) => void;
+}
+export function createGate(deps: GateDependencies) {
+  let config: Config | undefined;
+  try {
+    config = parseConfig(deps.options);
+  } catch {
+    /* Register a fail-safe hook even for invalid options. */
+  }
+  const engine = config?.enabled
+    ? new ReviewEngine(config, deps.reviewer(config))
+    : undefined;
+  let closed = false;
+  return {
+    async evaluate(event: PermissionEvent): Promise<void> {
+      if (
+        event.action !== "shell" ||
+        event.effect === "deny" ||
+        config?.enabled === false
+      )
+        return;
+      const started = performance.now();
+      // Downgrade existing allow immediately; exceptions must never preserve it.
+      event.effect = "ask";
+      let result = ask(closed ? "unloaded" : "invalid_configuration");
+      try {
+        if (!closed && engine && config) {
+          const command = deps.command(event);
+          const resources = [...event.resources];
+          result =
+            command === undefined
+              ? ask("missing_full_command")
+              : await engine.review(
+                  { command, resources, context: [] },
+                  config.context.enabled
+                    ? () => deps.context(event.sessionID, config)
+                    : undefined,
+                );
+          if (
+            result.decision === "allow" &&
+            (deps.command(event) !== command ||
+              event.resources.length !== resources.length ||
+              resources.some(
+                (resource, index) => event.resources[index] !== resource,
+              ))
+          )
+            result = ask("input_changed");
+        }
+      } catch {
+        result = ask("gate_error");
+      }
+      // Another hook changing the event to deny while we awaited must win.
+      if ((event.effect as PermissionEvent["effect"]) === "deny") return;
+      if (closed) result = ask("unloaded");
+      event.effect = result.decision;
+      event.message = `OpenCode Censor: ${result.code.replaceAll("_", " ")}.`;
+      audit(
+        config?.logging ?? {
+          enabled: true,
+          level: "info",
+          includeCommands: false,
+        },
+        result,
+        performance.now() - started,
+        deps.log,
+      );
+    },
+    close() {
+      closed = true;
+      engine?.close();
+    },
+  };
+}

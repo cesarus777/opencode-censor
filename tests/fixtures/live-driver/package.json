@@ -1,0 +1,8 @@
+{
+  "name": "opencode-censor-live-probe",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  }
+}
