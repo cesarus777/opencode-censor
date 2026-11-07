@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add bounded custom reviewer instructions and sanitized reviewer decision/risk diagnostics.
+- Add generic opt-in stateful project review through bounded read/list/literal-search evidence requests, explicit path-scoped disclosure and revalidated session findings. Remove command-specific Make/Bash parsers and trusted-step lists.
+- Require fresh review and unchanged evidence for each operation; keep stateless inspection as the default.
+
 ## 0.1.1 — local audit reporting (2026-11-07)
 
 - Write fixed metadata audit records to a separate local JSONL file.

@@ -1,3 +1,21 @@
+# Development acceptance supplement
+
+The generic stateful implementation is unreleased. Its current validation evidence
+is recorded at the top of [VERIFICATION.md](VERIFICATION.md); the checklist below
+is historical release 0.1.0 acceptance, not acceptance of the development tree.
+
+- [x] Deterministic generic evidence-loop and protocol regression tests pass.
+- [x] Installed-package native probe covers generic allow, model ask, unavailable
+      evidence and stateful inspection, with a controlled provider and inert shell.
+- [ ] Validate real reviewer judgment for intended build tools and languages.
+- [ ] Validate original scanner/source behavior and interactive approval on the
+      intended deployment and plugin combination.
+- [ ] Complete release-specific version, archive and ownership checks before any
+      separately authorized publication.
+
+`bun run test:live` always uses a loopback mock provider and consumes no remote
+allowance. A real-provider automated acceptance harness is not implemented.
+
 # First release acceptance checklist
 
 Target: `@cesarus777/opencode-censor@0.1.0`, OpenCode and `@opencode/plugin` **2.2.5**.

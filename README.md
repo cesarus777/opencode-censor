@@ -2,7 +2,7 @@
 
 A native OpenCode V2 server plugin that asks a separately selected model to review shell permissions before execution. The model can recommend `allow` or `ask`; OpenCode executes the action and owns the approval interface. The plugin contains no shell executor, agent, terminal, backend, or approval UI.
 
-Version 0.1.1 targets **OpenCode / `@opencode/plugin` 2.2.5** and deliberately approves a small set of inspection commands. This is a security-sensitive initial release candidate. Package import and mocked integration are distinct from a live provider test; see [verification](docs/VERIFICATION.md) and [SDK research](docs/RESEARCH.md).
+Published version 0.1.1 targets **OpenCode / `@opencode/plugin` 2.2.5** and deliberately approves a small set of inspection commands. This is a security-sensitive initial release candidate. Package import and mocked integration are distinct from a live provider test; see [verification](docs/VERIFICATION.md) and [SDK research](docs/RESEARCH.md).
 
 ## How it works
 
@@ -13,7 +13,9 @@ flowchart TD
   R -->|explicit deny| D[OpenCode blocks action]
   R -->|allow or ask| H[Permission evaluate hook]
   H --> P[Check full input, resources and local policy]
-  P -->|eligible inspection| L[Stateless independent model generation]
+  P -->|stateless inspection| L[Stateless independent model generation]
+  P -->|opt-in stateful| G[Bounded project evidence and reviewer loop]
+  G --> V
   P -->|unsafe or incomplete| A[Set ask]
   L --> V[Strict JSON validation and final local policy]
   V -->|valid low-risk allow| E[Set allow]
@@ -25,7 +27,13 @@ flowchart TD
 
 The `tool.execute.before` hook only observes input. The `permission.evaluate` hook changes the decision. Both are native V2 hooks. Explicit configured denies are final before evaluation. Other permission actions pass through untouched.
 
-Scanner resources may omit shell operators, redirections, or other parts of the source. Automatic approval therefore requires a matching captured **complete** tool command, one identical scanner resource, and a command accepted by the local inspection grammar. Missing source identifiers, expired correlation, multiple resources, changed input, an external `workdir`, or unsupported shell syntax produce `ask`. A resource that happens to say `pwd` is insufficient on its own.
+Scanner resources may omit shell operators, redirections, or other parts of the source. Stateless automatic approval therefore requires a matching captured **complete** tool command, one identical scanner resource, and a command accepted by the local inspection grammar. Missing source identifiers, expired correlation, multiple resources, changed input, an external `workdir`, or unsupported shell syntax produce `ask`. A resource that happens to say `pwd` is insufficient on its own.
+
+The development checkout also supports opt-in [stateful project review](docs/STATEFUL.md)
+for generic commands with bounded, model-requested project evidence. Stateful
+mode delegates program semantics to the reviewer and enforces local evidence,
+budget and approval constraints; it does not interpret build tools or languages. This feature and custom
+reviewer instructions are not available in published 0.1.1; use a local build.
 
 ## Install from npm
 
@@ -104,9 +112,10 @@ Options are read once during setup from `ctx.options`. Reload the plugin after c
 | `model.providerID`        | required       | OpenCode provider ID, independent of the agent model                                                                                        |
 | `model.id`                | required       | OpenCode model ID; no automatic fallback to another model                                                                                   |
 | `mode`                    | `balanced`     | `strict`, `balanced`, or `permissive`                                                                                                       |
+| `review.strategy`         | `stateless`    | `stateless` inspection or opt-in `stateful` project review; see [project options](docs/STATEFUL.md)                                         |
 | `systemPrompt`            | `""`           | Additional operator review instructions; at most 6000 characters; cannot override local policy                                              |
 | `fallback`                | `ask`          | Only `ask` is supported                                                                                                                     |
-| `timeoutMs`               | `15000`        | Integer 10–60000; covers context retrieval and generation together                                                                          |
+| `timeoutMs`               | `15000`        | Integer 10–60000; covers context, evidence collection, all generation calls and rechecks together                                           |
 | `context.enabled`         | `false`        | Opt in to local extraction of task-intent labels                                                                                            |
 | `context.maxMessages`     | `5`            | Inspect at most the last 1–20 returned context entries locally                                                                              |
 | `context.maxCharacters`   | `6000`         | Scan at most 1–12000 characters of user text locally                                                                                        |
@@ -135,13 +144,13 @@ an empty string and accepts at most 6000 characters, without NUL characters.
 It is sent to your reviewer provider; do not put secrets in it. Reload after edits.
 The pinned SDK accepts one prompt string, so this option supplements the built-in
 instructions rather than creating a separate provider system message. It cannot
-expand the local command grammar, replace the JSON response contract, or bypass
-source checks. Custom instructions can request greater caution; a prompt asking
+expand the selected strategy's local command grammar, replace its JSON response
+contract, or bypass source checks. Custom instructions can request greater caution; a prompt asking
 for broader approvals cannot make unsupported commands eligible.
 
 ## Decision criteria and modes
 
-Every automatic approval needs **both** a valid model decision and the independent local policy. All modes escalate deletion, system changes, elevated privileges, external transmission, install/run pipelines, scripts, containers, unknown executables, shell expansion, redirection, composition, and ambiguous inputs. Task intent cannot override this boundary. The first release does not emit automatic `deny`; configured OpenCode deny rules provide hard prohibitions.
+Every automatic approval needs **both** a valid model decision and the independent local policy. In the default stateless strategy, all modes escalate deletion, system changes, elevated privileges, external transmission, install/run pipelines, scripts, containers, unknown executables, shell expansion, redirection, composition, and ambiguous inputs. Task intent cannot override this boundary. The first release does not emit automatic `deny`; configured OpenCode deny rules provide hard prohibitions.
 
 | Mode         | Eligible commands                                                                                                                                                                   | Confidence floor when supplied |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
@@ -151,7 +160,7 @@ Every automatic approval needs **both** a valid model decision and the independe
 
 The command grammar is intentionally exact: no arbitrary paths, revision arguments, quoting, extra whitespace, config flags, environment assignments, or flags outside this table. Candidate commands still require model review. Confidence is optional, never sufficient, and cannot override risk, schema, or policy checks. Strict mode also asks the reviewer to require exceptional certainty.
 
-Examples, assuming the captured command matches the scanner resource:
+Stateless examples, assuming the captured command matches the scanner resource:
 
 | Command                                                                         | Outcome                                                                 |
 | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -165,27 +174,27 @@ Examples, assuming the captured command matches the scanner resource:
 | `npm install`, `make`, `python script.py`, `bash script.sh`, `docker run image` | Ask: indirect arbitrary execution                                       |
 | `pwd && git status`, substitutions, nested shells, unknown binaries             | Ask                                                                     |
 
-The model must return a single flat JSON object with `decision`, `riskLevel`, `reason`, and optional numeric `confidence`. No Markdown fences or additional fields are accepted. Duplicate keys, including escaped names, are rejected. An `allow` requires `low` risk and exactly `Read-only inspection.` or `Read-only repository inspection.` as its reason. This deliberately constrained explanation vocabulary makes ambiguity and contradictory prose fall back to `ask`; arbitrary reasons are accepted only for `ask`. Provider reasons are never forwarded to logs or approval messages.
+For stateless inspection, the model must return a single flat JSON object with `decision`, `riskLevel`, `reason`, and optional numeric `confidence`. No Markdown fences or additional fields are accepted. Duplicate keys, including escaped names, are rejected. An `allow` requires `low` risk and exactly `Read-only inspection.` or `Read-only repository inspection.` as its reason. This deliberately constrained explanation vocabulary makes ambiguity and contradictory prose fall back to `ask`; arbitrary reasons are accepted only for `ask`. Provider reasons are never forwarded to logs or approval messages.
 
 ## Privacy and prompt injection
 
-Only eligible inspection commands and their matching resources reach the reviewer. Sensitive-data tripwires also run before transmission. Free-form commands, paths and secrets are outside the approved grammar, so their review falls back locally. Detection is not a general-purpose secret scanner and cannot identify every possible secret.
+In the default stateless strategy, only eligible inspection commands and their matching resources reach the reviewer. Stateful project review additionally discloses model-requested files within configured project path prefixes after `review.project.allowFileContents: true`; see its [privacy and trust boundary](docs/STATEFUL.md#expanded-trust-boundary). Sensitive-data tripwires also run before transmission. Free-form commands and paths are outside the stateless inspection grammar. Stateful mode explicitly broadens command disclosure and execution review, subject to sensitive-data checks and local limits. Detection is not a general-purpose secret scanner and cannot identify every possible secret.
 
 With context enabled, `ctx.session.context({sessionID})` returns history **locally**. The plugin scans only the bounded recent entries, selects user text, ignores attachments and assistant/tool/file content, and sends only fixed vocabulary labels: `inspect`, `debug`, `test`, `build`, `fix`, `refactor`, `document`, `review`. It skips text matching sensitive-data tripwires. No names, arbitrary words, paths, credentials, environment variables, file contents or original message text are sent. These labels are intentionally lossy; disable context to avoid even their disclosure. The SDK context endpoint currently has no pagination or size limit, so the local fetch may still be large even though scanning and provider input are bounded.
 
-Instructions and JSON data are visibly separated. The current text API accepts a **single prompt string**, without an independent system-message or JSON-schema parameter; the prompt module cannot create a provider-enforced trust boundary. The closed command grammar, exact source correlation, constrained response reasons, strict parser, risk checks and fail-safe behavior are independent protections. They reduce exposure without promising immunity to prompt injection or model mistakes.
+Instructions and JSON data are visibly separated. The current text API accepts a **single prompt string**, without an independent system-message or JSON-schema parameter; the prompt module cannot create a provider-enforced trust boundary. The stateless closed grammar, source correlation, strict response parsing, configured evidence boundaries, risk checks and fail-safe behavior are independent protections. Stateful semantic judgments remain delegated to the model. They reduce exposure without promising immunity to prompt injection or model mistakes.
 
 ## Timeouts, concurrency and lifecycle
 
 Each evaluation owns its deadline and cancellation controller. Unload settles pending evaluations as `ask`, clears correlation state, and disposes registrations. Setup failure disposes registrations already acquired. Late results and late rejections cannot mutate a resolved permission event and do not create unhandled promise rejections.
 
-The 2.2.5 Promise API types expose request cancellation, but the local Promise adapter ignores generation request options. We pass the signal for future compatibility and independently enforce the deadline. A timed-out request may continue consuming provider resources. At most eight active or still-unsettled review tasks are admitted per plugin instance; additional evaluations ask immediately. If all eight hang forever, reviews keep asking until reload. The plugin adds no retry, queue, coalescing, persistent storage, or approval cache; native provider retry behavior remains controlled by OpenCode.
+The 2.2.5 Promise API types expose request cancellation, but the local Promise adapter ignores generation request options. We pass the signal for future compatibility and independently enforce the deadline. A timed-out request may continue consuming provider resources. At most eight active or still-unsettled review tasks are admitted per plugin instance; additional evaluations ask immediately. If all eight hang forever, reviews keep asking until reload. The plugin adds no retry, queue, coalescing, persistent storage, or approval cache. Stateful project review holds bounded temporary findings and serializes reviews per session; native provider retry behavior remains controlled by OpenCode.
 
 Correlation is keyed by session/message/call, capped at 256 entries, expires logically after 60 seconds, and is removed on tool completion or unload. Expired entries are pruned on subsequent tool calls. Expired or missing data always asks. Correlation state is temporary memory, not an approval cache.
 
 ## Audit and troubleshooting
 
-JSON audit records contain timestamp, `shell` action, final decision, risk, elapsed milliseconds, a fixed reason code, and fallback status. Validated replies also add `reviewerDecision` and `reviewerRiskLevel`, distinct from the final policy decision. Malformed replies produce `invalid_review_response`; provider/context failures produce `review_error`. Missing reviewer fields mean no validated reply is attached, not a model rejection. Records contain no full commands, context, session identifiers, raw provider output, exception messages or analytics payloads. Risk defaults to `medium` when unknown; a skipped high-risk command is not a complete risk assessment. The public SDK has no general plugin logger. Records go to a separate JSONL file. A file write failure cannot turn `ask` into `allow`, but can make counts incomplete. Invalid configuration falls back to stderr. Keep the file private and rotate/archive it as needed.
+JSON audit records contain timestamp, `shell` action, final decision, risk, elapsed milliseconds, a fixed reason code, and fallback status. Validated replies also add `reviewerDecision` and `reviewerRiskLevel`, distinct from the final policy decision. Stateful reviews add model-call/evidence counts and a validated fixed `reviewerReasonCode`. Malformed replies produce `invalid_review_response`; provider/context failures produce `review_error`. Missing reviewer fields mean no validated reply is attached, not a model rejection. Records contain no full commands, context, session identifiers, raw provider output, exception messages or analytics payloads. Risk defaults to `medium` when unknown; a skipped high-risk command is not a complete risk assessment. The public SDK has no general plugin logger. Records go to a separate JSONL file. A file write failure cannot turn `ask` into `allow`, but can make counts incomplete. Invalid configuration falls back to stderr. Keep the file private and rotate/archive it as needed.
 
 After starting OpenCode with this plugin, run `censor-stats` from a standalone installation, or `bun run stats` in this checkout after building. Pass a custom audit path as the first argument, for example `bun run stats /absolute/path/audit.jsonl`. The report shows automatic approvals divided by all audited shell evaluations. `ask` means sent to native approval, not necessarily rejected; native configured denies, non-shell actions, and later human decisions are outside the count. Set `logging.level` to `info` for complete totals.
 
@@ -208,7 +217,7 @@ LLMs can be wrong. This plugin is **not a sandbox** and cannot constrain a comma
 
 - Only actions that reach the native `shell` permission hook are covered. Direct terminals, unrelated MCP tools and arbitrary plugin code are outside scope.
 - Host executables, shell startup files, environment, Git configuration, filesystem and other plugins must be trusted. Even inspection may invoke configured helpers (for example Git fsmonitor), write index metadata, or expose output to the working agent. Closed syntax does not prove absence of side effects in a hostile runtime.
-- The plugin never verifies executable binaries, resolves symlinks, inspects script bodies or provides filesystem isolation. Workdir checks are lexical; symlinks and changes during the check/run interval remain host concerns.
+- The plugin never verifies executable binaries or provides filesystem isolation. Stateless workdir checks are lexical. Stateful review inspects model-requested files within permitted project scopes, rejects symlinked evidence paths, requires the project-root workdir, and rechecks file hashes. Filesystem races during inspection and the final check/run interval remain host concerns.
 - Other trusted plugins may mutate tool inputs or override a decision later. Put this gate after command-rewriting plugins, avoid conflicting permission hooks, and test your actual plugin combination. An explicit native configured deny is stronger than a plugin-generated ask.
 - The reviewer shares OpenCode's process/provider infrastructure and may use the same vendor; independent model selection is not process isolation. Native generation hooks or provider diagnostics may observe prompts.
 - Experimental generation contracts can change. Dependency and host compatibility are pinned and must be retested when upgraded. No V1 adapter is supplied.
@@ -236,7 +245,9 @@ bun run build
 OPENCODE_BIN=/absolute/path/to/opencode bun run test:live
 ```
 
-This installs the npm archive into an isolated consumer and starts exactly OpenCode 2.2.5 with synthetic credentials and a controlled loopback HTTP provider. The test driver replaces the shell tool with permission assertions; no reviewed command is executed and no pending request is approved. It checks native source hooks, allow/ask/error/deny, tool completion, delayed and late replies, eight-request capacity, concurrent requests and reload. It requires subprocess and loopback access. The native CI job pins Bun 1.3.11 and OpenCode 2.2.5 and needs no external provider credentials.
+This installs the npm archive into an isolated consumer and starts exactly OpenCode 2.2.5 with synthetic credentials and a controlled loopback HTTP provider. The test driver replaces the shell tool with permission assertions; no reviewed command is executed and no pending request is approved. It checks native source hooks, allow/ask/error/deny, tool completion, delayed and late replies, eight-request capacity, concurrent requests, reload, and the generic evidence loop with allow/ask/unavailable-file outcomes. It requires subprocess and loopback access. The native CI job pins Bun 1.3.11 and OpenCode 2.2.5 and needs no external provider credentials.
+
+This command always uses the controlled loopback provider and consumes no remote-model allowance. No real-provider acceptance command exists yet.
 
 The replacement tool does not validate the built-in shell scanner/executor. Real reviewer and interactive native-client acceptance remain mandatory; follow the [release checklist](docs/RELEASE-CHECKLIST.md) and record evidence in [verification](docs/VERIFICATION.md). Provider cancellation is limited by the pinned SDK adapter even when native permission waiting is bounded.
 

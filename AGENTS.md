@@ -18,16 +18,20 @@ Documentation is in English; communicate with the user in their chosen language.
 - Default to `ask` for errors, uncertainty, missing source information, invalid
   configuration, malformed responses, timeout, overload, and unload.
 - An automatic `allow` requires both valid model output and independent local
-  policy. Model output and task context cannot weaken that policy.
+  policy. Model output and task context cannot weaken that policy. Stateful semantic
+  judgments are delegated to the reviewer; local policy enforces source, disclosure,
+  budgets, evidence freshness and validated approval conditions, not program semantics.
 - Treat scanner resources as fragments, never as proof of a complete script.
   Correlate native tool input with session/message/call identifiers and recheck
   input and resources after asynchronous review.
-- Keep the automatic-approval grammar narrow. Changes that expand it require
+- Keep the stateless automatic-approval grammar narrow. Changes that expand it require
   explicit security reasoning, regression tests, and updated documentation.
 - Never execute reviewed command strings in the plugin or tests. Do not add a
   shell executor, approval UI, backend, MCP server, or automatic permission replies.
-- Do not transmit raw history, file contents, credentials, or environment values.
-  Context remains opt-in and limited to the fixed intent-label vocabulary.
+- Do not transmit raw history, credentials, or environment values. Task context
+  remains opt-in and limited to the fixed intent-label vocabulary. Stateful review
+  may disclose requested files within configured path scopes only with allowFileContents opt-in;
+  retain bounded inspection, sensitive-data checks and the documented trust boundary.
 - Audit only fixed metadata and local reason codes. Do not log commands, raw
   provider responses, context, secrets, or exception messages.
 - Bound concurrent work and total waiting time. Late results cannot change a

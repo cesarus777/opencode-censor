@@ -9,6 +9,9 @@ export interface AuditRecord {
   durationMs: number;
   reason: string;
   fallback: boolean;
+  reviewCalls?: number;
+  evidenceCount?: number;
+  reviewerReasonCode?: string;
   reviewerDecision?: Outcome["reviewerDecision"];
   reviewerRiskLevel?: Outcome["reviewerRiskLevel"];
 }
@@ -30,6 +33,15 @@ export function audit(
     durationMs: Math.max(0, Math.round(durationMs)),
     reason: outcome.code,
     fallback: outcome.fallback,
+    ...(outcome.reviewCalls !== undefined
+      ? { reviewCalls: outcome.reviewCalls }
+      : {}),
+    ...(outcome.evidenceCount !== undefined
+      ? { evidenceCount: outcome.evidenceCount }
+      : {}),
+    ...(outcome.reviewerReasonCode
+      ? { reviewerReasonCode: outcome.reviewerReasonCode }
+      : {}),
     ...(outcome.reviewerDecision
       ? { reviewerDecision: outcome.reviewerDecision }
       : {}),

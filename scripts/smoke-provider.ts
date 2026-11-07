@@ -42,15 +42,64 @@ export function localProvider() {
           ?.content,
       );
       const finished = body.messages.some((message) => message.role === "tool");
-      const command = lastUser?.includes("probe-deny")
-        ? "git push --force"
-        : lastUser?.includes("probe-policy")
-          ? "printf censor-smoke"
-          : "pwd";
+      const command = lastUser?.includes("probe-generic")
+        ? "ninja"
+        : lastUser?.includes("probe-deny")
+          ? "git push --force"
+          : lastUser?.includes("probe-policy")
+            ? "printf censor-smoke"
+            : "pwd";
+      const textContent = (value: unknown): string => {
+        if (typeof value === "string") return value;
+        if (Array.isArray(value)) return value.map(textContent).join("\n");
+        if (
+          value &&
+          typeof value === "object" &&
+          "text" in value &&
+          typeof value.text === "string"
+        )
+          return value.text;
+        return "";
+      };
+      const readEvidence = body.messages
+        .map((message) => textContent(message.content))
+        .join("\n")
+        .includes('"content":');
+      if (reviewing && selected.startsWith("project"))
+        records.push({ type: "project-evidence", read: readEvidence });
       const content = reviewing
-        ? selected === "ask"
-          ? '{"decision":"ask","riskLevel":"medium","reason":"Controlled uncertainty."}'
-          : '{"decision":"allow","riskLevel":"low","reason":"Read-only inspection."}'
+        ? selected.startsWith("project")
+          ? JSON.stringify(
+              readEvidence ||
+                (selected === "project-missing" &&
+                  body.messages
+                    .map((message) => textContent(message.content))
+                    .join("\n")
+                    .includes('"status":"unavailable"'))
+                ? {
+                    action: "decide",
+                    decision: selected === "project" ? "allow" : "ask",
+                    riskLevel: selected === "project" ? "low" : "medium",
+                    reasonCode:
+                      selected === "project"
+                        ? "understood_operation"
+                        : "incomplete_evidence",
+                    confidence: 0.99,
+                    uncertain: selected !== "project",
+                    evidence: [selected === "project-missing" ? "e1" : "e2"],
+                    effects: ["workspace_read", "process_execution"],
+                  }
+                : {
+                    action: "read",
+                    path:
+                      selected === "project-missing"
+                        ? "missing.ninja"
+                        : "build.ninja",
+                  },
+            )
+          : selected === "ask"
+            ? '{"decision":"ask","riskLevel":"medium","reason":"Controlled uncertainty."}'
+            : '{"decision":"allow","riskLevel":"low","reason":"Read-only inspection."}'
         : "Probe complete.";
       const tool = {
         id: "call_" + crypto.randomUUID(),

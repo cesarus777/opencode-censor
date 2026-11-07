@@ -12,12 +12,43 @@ The trusted computing base includes OpenCode's rule evaluation, scanner and perm
 
 - Explicit native deny rules run before hooks and remain authoritative. The plugin also defensively leaves incoming deny events untouched.
 - In-scope existing allows are immediately downgraded before asynchronous review. Any review, configuration, parsing, context or timeout error produces ask.
-- Candidate commands must match a closed inspection grammar and a captured complete native shell tool input. Multiple scanner fragments, absent source IDs, changed source, expired correlation and unsupported workdirs ask.
-- Free shell programs, redirection, substitutions, command chains, network operations, installation, scripts, privilege changes, deletion and history mutation never become automatic allow, even with a malicious allow response.
+- Stateless candidate commands must match a closed inspection grammar and a captured complete native shell tool input. Multiple scanner fragments, absent source IDs, changed source, expired correlation and unsupported workdirs ask.
+- In stateless mode, free shell programs, redirection, substitutions, command chains, network operations, installation, scripts, privilege changes, deletion and history mutation never become automatic allow, even with a malicious allow response.
 - The response parser rejects extra fields, nested values, duplicate keys, invalid values, unknown decisions and ambiguous/contradictory allow explanations. Risk, reason and local policy checks are independent of confidence.
-- Only eligible commands cross the provider boundary. A sensitive-data tripwire supplements the grammar. Optional context transmits fixed intent labels rather than original text or file contents.
+- Only commands eligible for the configured local strategy cross the provider boundary. A sensitive-data tripwire supplements the grammar. Optional context transmits fixed intent labels rather than original text or file contents.
 - Per-evaluation deadlines, lifecycle cancellation and a bound of eight unsettled tasks prevent indefinite UI waiting and unbounded model requests. Late results cannot change returned effects.
 - Audit file records use fixed local reason codes. File write failures can make counts incomplete but cannot change a permission result. No commands, histories, model output, raw error messages, credentials or analytics are logged by this plugin.
+
+## Opt-in stateful project review
+
+Stateful review deliberately delegates program semantics to a generic model loop.
+It has no Make/Bash interpreters, command allowlists or trusted recipe steps. This
+expands the original inspection-only boundary: local policy constrains disclosure,
+observable command features, source correlation, budgets, validated declarations
+and evidence freshness; it cannot independently prove arbitrary programs safe.
+
+Explicit `allowFileContents` consent permits model-requested files within configured
+project-relative path scopes to reach the selected provider. Raw history and
+runtime environment values remain excluded. Read/list/literal-search operations
+use bounded filesystem APIs only, with no subprocesses, execution tools or working
+agents. Traversal, symlinks, protected paths, invalid encoding, sensitive matches
+and exceeded limits produce unavailable evidence and prevent allow. Secret
+tripwires are heuristic and cannot guarantee confidential data is removed.
+
+A final allow needs a successful referenced current full-file read, no unresolved
+evidence failures, low model risk, sufficient confidence, no declared uncertainty,
+and no model-declared forbidden or unknown effects. These are model declarations,
+not enforcement of all transitive effects. A lying or mistaken reviewer can
+misjudge a harmful eligible command. Native hard denies remain authoritative.
+Use actual host isolation for filesystem/network restrictions.
+
+All inspected file contents and visible directory inventories are rechecked, as
+are native input, root workdir and scanner resources. Multiple scanner fragments
+are supplemental only; the captured complete command is supplied independently.
+Prior findings are withheld until their evidence is freshly reacquired and matches
+its fingerprints. Temporary state is bounded, expires and never caches approvals.
+Audit remains fixed metadata without commands, file contents or provider prose.
+See [the protocol, configuration and limits](docs/STATEFUL.md).
 
 ## Boundaries and residual risks
 
@@ -31,7 +62,7 @@ The current text API has no provider-enforced system/data split or JSON-schema o
 
 The SDK's local Promise adapter currently ignores generation cancellation options. The native smoke with a controlled loopback HTTP provider observed zero provider abort events after deadlines and reload. Timed-out calls can continue incurring costs. Eight stuck calls exhaust review capacity until reload; further requests ask rather than opening more calls. Context history is fetched locally in full because the native endpoint lacks a limit; only local scanning and transmitted labels are bounded.
 
-The sensitive-data tripwire is heuristic. The closed command vocabulary and label-only context avoid forwarding arbitrary supplied strings, but a user must still trust their model provider, native provider hooks/diagnostics and OpenCode configuration. Audit sinks outside this plugin may have their own retention policies. Correlation holds temporary tool input references in bounded memory until tool completion, later pruning, or unload; no command history is persisted by the plugin.
+The sensitive-data tripwire is heuristic. The default closed command vocabulary and label-only context avoid forwarding arbitrary supplied strings; opt-in stateful review additionally discloses selected file contents, but a user must still trust their model provider, native provider hooks/diagnostics and OpenCode configuration. Audit sinks outside this plugin may have their own retention policies. Correlation holds temporary tool input references in bounded memory until tool completion, later pruning, or unload; no command history is persisted by the plugin.
 
 Only shell permission events are protected. Direct terminals, arbitrary plugin code, MCP tools, alternate execution mechanisms and permissions that OpenCode does not emit are outside scope. The plugin never calls `permission.reply`, launches a shell, or retries an execution.
 

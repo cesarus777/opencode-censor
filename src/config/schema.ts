@@ -7,6 +7,22 @@ export interface Config {
   mode: Mode;
   fallback: "ask";
   systemPrompt: string;
+  review: {
+    strategy: "stateless" | "stateful";
+    maxModelCalls: number;
+    allowShellSyntax: boolean;
+    alwaysAsk: string[];
+    forbiddenEffects: string[];
+    project: {
+      allowFileContents: boolean;
+      allowedPaths: string[];
+      excludedPaths: string[];
+      maxFileBytes: number;
+      maxTotalBytes: number;
+      maxFiles: number;
+      maxDirectoryEntries: number;
+    };
+  };
   timeoutMs: number;
   context: { enabled: boolean; maxMessages: number; maxCharacters: number };
   logging: {
@@ -68,11 +84,91 @@ export function parseConfig(value: unknown): Config {
     "mode",
     "fallback",
     "systemPrompt",
+    "review",
     "timeoutMs",
     "context",
     "logging",
     "cache",
   ]);
+  const review = section(root.review, [
+    "strategy",
+    "project",
+    "maxModelCalls",
+    "allowShellSyntax",
+    "alwaysAsk",
+    "forbiddenEffects",
+  ]);
+  const project = section(review.project, [
+    "allowFileContents",
+    "allowedPaths",
+    "excludedPaths",
+    "maxFileBytes",
+    "maxTotalBytes",
+    "maxFiles",
+    "maxDirectoryEntries",
+  ]);
+  const strategy =
+    review.strategy === undefined ? "stateless" : review.strategy;
+  if (strategy !== "stateless" && strategy !== "stateful")
+    throw new Error("Invalid strategy");
+  const allowFileContents = bool(project.allowFileContents, false);
+  if (strategy === "stateful" && !allowFileContents)
+    throw new Error("Project disclosure requires opt-in");
+  const list = (value: unknown, defaults: string[]): string[] => {
+    if (value === undefined) return defaults;
+    if (
+      !Array.isArray(value) ||
+      value.length > 32 ||
+      value.some(
+        (v) =>
+          typeof v !== "string" ||
+          !v ||
+          v.length > 300 ||
+          /[\u0000-\u001f\u007f]/.test(v),
+      )
+    )
+      throw new Error("Invalid project list");
+    return [...new Set(value as string[])];
+  };
+  const paths = (value: unknown, defaults: string[]): string[] => {
+    const result = list(value, defaults);
+    if (
+      result.some(
+        (path) =>
+          path !== "." &&
+          (!/^[a-zA-Z0-9_. /-]+$/.test(path) ||
+            path.startsWith("/") ||
+            path
+              .split("/")
+              .some((part) => !part || part === "." || part === "..")),
+      )
+    )
+      throw new Error("Invalid project path");
+    return result;
+  };
+  const forbiddenEffects = list(review.forbiddenEffects, [
+    "network",
+    "privilege",
+    "destructive",
+    "outside_project",
+    "unknown",
+  ]);
+  if (
+    forbiddenEffects.some(
+      (effect) =>
+        ![
+          "workspace_read",
+          "workspace_write",
+          "process_execution",
+          "network",
+          "privilege",
+          "destructive",
+          "outside_project",
+          "unknown",
+        ].includes(effect),
+    )
+  )
+    throw new Error("Invalid effect");
   const model = section(root.model, ["providerID", "id"]);
   const context = section(root.context, [
     "enabled",
@@ -119,6 +215,22 @@ export function parseConfig(value: unknown): Config {
     mode,
     fallback: "ask",
     systemPrompt,
+    review: {
+      strategy,
+      maxModelCalls: integer(review.maxModelCalls, 4, 1, 8),
+      allowShellSyntax: bool(review.allowShellSyntax, false),
+      alwaysAsk: list(review.alwaysAsk, []),
+      forbiddenEffects,
+      project: {
+        allowFileContents,
+        allowedPaths: paths(project.allowedPaths, ["."]),
+        excludedPaths: paths(project.excludedPaths, []),
+        maxFileBytes: integer(project.maxFileBytes, 16384, 1, 65536),
+        maxTotalBytes: integer(project.maxTotalBytes, 65536, 1, 262144),
+        maxFiles: integer(project.maxFiles, 16, 1, 32),
+        maxDirectoryEntries: integer(project.maxDirectoryEntries, 128, 1, 512),
+      },
+    },
     timeoutMs: integer(root.timeoutMs, 15000, 10, 60000),
     context: {
       enabled: bool(context.enabled, false),

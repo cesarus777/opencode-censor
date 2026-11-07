@@ -5,14 +5,21 @@ export const ALLOW_REASONS = [
   "Read-only inspection.",
   "Read-only repository inspection.",
 ];
-function rejectDuplicateFields(text: string): void {
+export function rejectDuplicateFields(text: string, arrays = false): void {
   // A tiny flat-JSON lexer preserves duplicate keys, which JSON.parse discards.
-  // Only scalar values are valid in this protocol; escaped keys are decoded.
+  // Stateless values are scalars; the project protocol also admits string arrays.
+  // Escaped keys are decoded before checking for duplicates.
   const source = text.trim();
   if (!source.startsWith("{") || !source.endsWith("}"))
     throw new Error("Invalid object");
-  const field =
+  const scalarField =
     /\s*("(?:[^"\\]|\\.)*")\s*:\s*(?:"(?:[^"\\]|\\.)*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)\s*/y;
+  const string = '"(?:[^"\\\\]|\\\\.)*"';
+  const arrayField = new RegExp(
+    `\\s*(${string})\\s*:\\s*(?:${string}|-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?|true|false|null|\\[(?:\\s*${string}\\s*(?:,\\s*${string}\\s*)*)?\\])\\s*`,
+    "y",
+  );
+  const field = arrays ? arrayField : scalarField;
   const seen = new Set<string>();
   let offset = 1;
   while (offset < source.length - 1) {

@@ -295,11 +295,70 @@ try {
     )
   )
     throw new Error("Inert tool substitution failed");
+  // Reload the installed plugin with generic project review enabled. The native
+  // shell remains replaced with permission assertions throughout this phase.
+  await writeFile(
+    resolve(project, "build.ninja"),
+    "rule inspect\n  command = pwd\nbuild check: inspect\n",
+  );
+  const configuration = JSON.parse(
+    await readFile(resolve(project, "opencode.json"), "utf8"),
+  );
+  configuration.plugins[0].options.review = {
+    strategy: "stateful",
+    project: { allowFileContents: true, allowedPaths: ["build.ninja"] },
+  };
+  await writeFile(
+    resolve(project, "opencode.json"),
+    JSON.stringify(configuration),
+  );
+  await client.location.reload(request());
+  for (const [mode, text] of [
+    ["project", "probe-generic"],
+    ["project-ask", "probe-generic"],
+    ["project-missing", "probe-generic"],
+    ["project", "probe-pwd"],
+  ] as const) {
+    const before = await reviewCount();
+    const id = await probe(mode, text);
+    if (mode === "project") await waitRecord("inert-allowed", id);
+    else
+      await until(
+        async () =>
+          (await client.permission.list({ sessionID: id }, request())).length >
+          0
+            ? true
+            : undefined,
+        "generic project ask",
+      );
+    if ((await reviewCount()) - before !== 2)
+      throw new Error("Generic review must request evidence and then decide");
+    const decision = (await records()).find(
+      (record) => record.type === "evaluated" && record.sessionID === id,
+    );
+    const reason =
+      mode === "project"
+        ? "project review allowed"
+        : mode === "project-ask"
+          ? "project requires approval"
+          : "evidence unavailable";
+    if (decision?.message !== `OpenCode Censor: ${reason}.`)
+      throw new Error(
+        "Generic project decision mismatch: " + JSON.stringify(decision),
+      );
+    if (
+      mode !== "project" &&
+      (await records()).some(
+        (record) => record.type === "inert-allowed" && record.sessionID === id,
+      )
+    )
+      throw new Error("Generic project ask became allow");
+  }
   const cancellation = (await records()).filter(
     (r) => r.type === "provider-abort",
   ).length;
   console.log(
-    `PASS: installed archive in OpenCode 2.2.5; native source hooks; allow/ask/error/explicit deny; tool completion; timeout and late reply; 10 concurrent requests / 8 admitted; reload cleanup. Provider abort observations: ${cancellation}.`,
+    `PASS: installed archive in OpenCode 2.2.5; native source hooks; allow/ask/error/explicit deny; tool completion; timeout and late reply; 10 concurrent requests / 8 admitted; reload cleanup; generic evidence loop allow/ask/missing-file fallback. Provider abort observations: ${cancellation}.`,
   );
   console.log(
     "Scope: controlled loopback HTTP provider and inert replacement shell; no reviewed command executed, real scanner/remote reviewer/interactive UI acceptance remains separate.",

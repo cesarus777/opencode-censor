@@ -50,3 +50,31 @@ The `systemPrompt` option is bounded operator-supplied text appended to the buil
 instructions in the existing single prompt string. It is not a new SDK parameter
 or a provider system-message role. Local eligibility, parsing, source correlation
 and final policy remain independent and unchanged.
+
+## Generic stateful project review
+
+The generic loop uses the same `experimental.generate.text` call and single prompt
+string. Evidence requests are a strict local JSON protocol implemented by the
+plugin, not invented SDK tool calls. Each round is stateless generation with the
+current complete command and accumulated evidence. No provider session or working
+agent is created. Native SDK declarations and dependency versions are unchanged.
+
+The injectable evidence source provides bounded Node filesystem reads, directory
+listings and recursive literal searches. The adapter supplies the project root
+and session ID locally; session IDs never reach prompts or audit. State includes
+bounded evidence fingerprints and fixed findings, not persisted file content or
+approvals. Findings are exposed only after matching evidence is freshly acquired.
+
+Stateless parsing retains its original scalar-only protocol. Generic parsing
+additionally permits string arrays for evidence references and effects, with a
+flat-object duplicate-key lexer and exact action-specific schemas. Model safety
+judgment replaces the removed Make/Bash parsers. Scanner fragments may be multiple
+and are supplemental to the captured complete command; all inputs are rechecked.
+
+Bun 1.3.11's directory handle `close()` can return undefined despite the Node
+Promise declaration. Cleanup uses `await` with try/catch rather than chaining
+`.catch()` on its return value. Evidence failures remain fixed local codes.
+
+The controlled native smoke adds a generic evidence request/final-decision phase
+using the installed archive, inert replacement shell and loopback provider. This
+is separate from original-scanner, remote-provider and interactive-client acceptance.

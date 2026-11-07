@@ -1,3 +1,76 @@
+# Generic project evidence loop — 2026-11-07
+
+Replaced the development Make/Bash verifier with a generic read/list/literal-search
+review protocol. No command-specific parsing, exact command allowlists, phony
+requirements or trusted-step grants remain. Stateful mode delegates execution
+semantics to the model; local policy constrains source correlation, disclosure,
+observable command features, budgets, schema, declared effects and freshness.
+Stateless inspection remains unchanged and is the default. The two reported Make
+mismatches are retained as inert complete-command/full-file evidence fixtures;
+these tests do not claim local code independently proves arbitrary Make behavior.
+
+The evidence source uses bounded filesystem APIs, protected-path and symlink checks,
+full UTF-8 reads, explicit unavailable results, and file/directory fingerprints.
+All observations are rechecked before accepting the result. Session findings are
+bounded/expiring, local-command-hash-specific and withheld until referenced evidence
+is freshly reacquired. Raw command history, provider prose and file contents are
+not stored between evaluations or logged. No reviewed command is executed.
+
+Bun 1.3.11 frozen installation, strict typecheck, formatting, 152 deterministic
+unit/mock-host tests (426 assertions), and build passed with Node 26.11.1.
+The fixtures cover Ninja, CMake, Meson, Bazel, Python, Ruby and Node through one
+protocol; these are mocked judgment/transport tests, not executions or language
+semantic acceptance. Coverage includes duplicate/escaped JSON fields, invalid
+schemas/references, missing/sensitive/oversized evidence, scope and symlink escapes,
+search/traversal budgets, stale files/inventories, declared restrictions, session
+isolation/expiry/eviction, command-specific findings, concurrent reviews, capacity,
+late rejection, unload and native input/workdir rechecks.
+
+The 65-file npm archive passed content inspection, isolated installation with
+lifecycle scripts disabled, and Bun/Node ESM imports. The installed-archive native
+OpenCode 2.2.5 probe passed outside the sandbox with a controlled loopback provider
+and inert replacement shell: existing allow/ask/error/deny, timeout, late replies,
+eight-of-ten admission and reload checks, plus generic two-call evidence/final
+allow, model ask, unavailable-file fallback, and a stateful inspection command.
+Provider abort observations remained zero. The sandboxed attempt failed the native
+version preflight, consistent with the host subprocess restriction; it is not a pass.
+
+Original shell scanner/executor, remote reviewer quality and interactive-client
+acceptance remain untested. No provider credentials were accessed. No dependency,
+publication, push, tag or release was performed during implementation. Commit
+creation is tracked separately by repository history.
+
+# Superseded Make/Bash subset verification — 2026-11-07
+
+Implemented `review.strategy: stateful` using the existing native stateless text
+API, an injectable bounded filesystem inspector, and temporary per-session
+operation/decision/risk findings. Explicit `allowFileContents` consent and exact
+entrypoint/file lists control disclosure. Stateless inspection stays the default.
+No reviewed commands were executed, no provider agent was created, and no approval
+cache or permission replies were added.
+
+The local grammar admits a restricted Make/Bash subset. GNU Make's implicit-rule
+and makefile-remaking behavior requires phony guards for reachable targets and all
+three default Makefile names. Explicit trusted steps delegate trust to selected
+executables and their transitive code; this is a documented expansion of the
+original read-only boundary, not a claim of complete script safety. Model output
+cannot expand these local limits. Source and project evidence are rechecked after
+review; raw file contents and provider prose never enter session findings or audit.
+
+Bun 1.3.11 frozen installation, typecheck, formatting, 148 deterministic tests
+(346 assertions), and build passed. Tests cover static dependency closure,
+unsupported syntax, implicit-rule guards, sensitive matches, file-size limits,
+symlinks, changed files, model uncertainty, exact trusted steps, bounded traversal,
+session expiry/eviction/isolation, overlapping reviews, late rejection, unload,
+sanitized audit records, and adapter workdir/source rechecks.
+The 59-file npm archive passed content inspection, installation with lifecycle
+scripts disabled, and standalone Bun/Node imports (Node 26.11.1).
+
+Native host probing was not rerun for this change. Original built-in scanner,
+remote provider review quality, and interactive native-client acceptance of the
+new Make/Bash entrypoints remain untested. Mock-host checks are not evidence of
+those behaviors. No dependency, publication, push, tag or release change was made.
+
 # Custom reviewer instructions and decision diagnostics — 2026-11-07
 
 Added bounded optional `systemPrompt` instructions alongside the existing caution

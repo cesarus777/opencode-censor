@@ -1,5 +1,6 @@
-// This is a tripwire, not a general secret detector. Only a closed command grammar
-// can cross the provider boundary; free-form history never crosses it.
+// This is a tripwire, not a general secret detector. Stateless review uses a
+// closed command grammar; stateful file disclosure requires explicit opt-in.
+// Free-form history never crosses the provider boundary.
 export function containsSensitiveData(value: string): boolean {
   return /(?:secret|token|password|passwd|credential|authorization|api[_-]?key|private[_ -]?key|\.env|\.ssh|\.aws|-----BEGIN|sk-[\w-]+|gh[pousr]_|AKIA[A-Z0-9]{16}|https?:\/\/[^\s]*@)/i.test(
     value,

@@ -1,3 +1,6 @@
+import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { expect, test } from "bun:test";
 import type { Plugin } from "@opencode/plugin";
 import plugin from "../../src/index.js";
@@ -344,4 +347,100 @@ test("source mutation while model review is pending cannot reuse an allow", asyn
   expect(value.effect).toBe("ask");
   expect(value.message).toContain("input changed");
   await cleanup?.();
+});
+
+test("stateful adapter correlates source, enforces root workdir, and rechecks pending edits", async () => {
+  const root = await mkdtemp(join(tmpdir(), "censor-stateful-host-"));
+  let finish: (() => void) | undefined;
+  let started: (() => void) | undefined;
+  let delay = false;
+  const mock = host({
+    location: { directory: root },
+    options: {
+      ...options,
+      review: {
+        strategy: "stateful",
+        project: {
+          allowFileContents: true,
+          allowedPaths: ["."],
+        },
+      },
+    },
+    experimental: {
+      generate: {
+        async text({ prompt }: { prompt: string }) {
+          expect(prompt).toContain('"path":"Makefile"');
+          if (!prompt.includes('"content":'))
+            return {
+              text: JSON.stringify({ action: "read", path: "Makefile" }),
+            };
+          if (delay) {
+            started?.();
+            await new Promise<void>((resolve) => {
+              finish = resolve;
+            });
+          }
+          return {
+            text: JSON.stringify({
+              decision: "allow",
+              riskLevel: "low",
+              action: "decide",
+              reasonCode: "understood_operation",
+              uncertain: false,
+              evidence: ["e2"],
+              effects: ["workspace_read"],
+              confidence: 0.99,
+            }),
+          };
+        },
+      },
+    },
+  });
+  let cleanup: Awaited<ReturnType<typeof plugin.setup>> = undefined;
+  try {
+    await writeFile(
+      join(root, "Makefile"),
+      ".PHONY: Makefile GNUmakefile makefile check\ncheck:\n\tpwd\n",
+    );
+    await mkdir(join(root, "subdir"));
+    cleanup = await plugin.setup(mock.ctx);
+    await mock.before("make check");
+    const value = event(["make check"]);
+    await mock.emit("evaluate", value);
+    expect(value.effect).toBe("allow");
+    await mock.before("make check", "c1", "subdir");
+    const subdir = event(["make check"]);
+    await mock.emit("evaluate", subdir);
+    expect(subdir.effect).toBe("ask");
+    const input = { command: "make check", workdir: "." };
+    await mock.emit("execute.before", {
+      tool: "shell",
+      sessionID: "s1",
+      messageID: "m1",
+      id: "c1",
+      input,
+    });
+    delay = true;
+    const ready = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const changed = event(["make check"]);
+    const pending = mock.emit("evaluate", changed);
+    await ready;
+    input.workdir = "subdir";
+    finish?.();
+    await pending;
+    expect(changed.effect).toBe("ask");
+    expect(changed.message).toContain("input changed");
+    await mock.before("make check");
+    const denied: PermissionEvent = {
+      ...event(["make check"]),
+      effect: "deny",
+    };
+    await mock.emit("evaluate", denied);
+    expect(denied.effect).toBe("deny");
+  } finally {
+    await cleanup?.();
+    await rm(root, { recursive: true, force: true });
+  }
 });

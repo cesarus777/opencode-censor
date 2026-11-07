@@ -10,6 +10,9 @@ export type Outcome = ReviewDecision & {
   fallback: boolean;
   reviewerDecision?: ReviewDecision["decision"];
   reviewerRiskLevel?: ReviewDecision["riskLevel"];
+  reviewCalls?: number;
+  evidenceCount?: number;
+  reviewerReasonCode?: string;
 };
 export interface PermissionEvent {
   readonly sessionID: string;

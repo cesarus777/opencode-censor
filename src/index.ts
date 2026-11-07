@@ -2,6 +2,7 @@ import { Plugin } from "@opencode/plugin";
 import { resolve, relative, isAbsolute } from "node:path";
 import { object, parseConfig } from "./config/schema.js";
 import { fileAuditSink } from "./observability/file.js";
+import { ProjectEvidence } from "./core/project-review.js";
 import { createGate } from "./core/permission-gate.js";
 import { nativeReviewer } from "./llm/reviewer.js";
 import { intentContext } from "./security/sanitization.js";
@@ -21,15 +22,20 @@ export default Plugin.define({
       { input: Record<string, unknown>; expires: number }
     >();
     const registrations: { dispose(): Promise<void> }[] = [];
+    let stateful = false;
     let log: ReturnType<typeof fileAuditSink> | undefined;
     try {
-      log = fileAuditSink(parseConfig(ctx.options).logging.file);
+      const config = parseConfig(ctx.options);
+      stateful = config.review.strategy === "stateful";
+      log = fileAuditSink(config.logging.file);
     } catch {
       // Invalid configuration is still audited to stderr by the gate.
     }
     const gate = createGate({
       ...(log ? { log } : {}),
       options: ctx.options,
+      project: (config) =>
+        new ProjectEvidence(ctx.location.directory, config.review.project),
       reviewer: (config) => nativeReviewer(ctx, config),
       command(event: PermissionEvent) {
         const source = event.source;
@@ -41,6 +47,14 @@ export default Plugin.define({
         const workdir = call.input.workdir;
         if (workdir !== undefined) {
           if (typeof workdir !== "string") return undefined;
+          // Project snapshots are rooted at the project directory, so stateful
+          // review rejects a different working directory, including later edits.
+          if (
+            stateful &&
+            resolve(ctx.location.directory, workdir) !==
+              resolve(ctx.location.directory)
+          )
+            return undefined;
           const path = relative(
             ctx.location.directory,
             resolve(ctx.location.directory, workdir),

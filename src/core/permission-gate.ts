@@ -2,6 +2,7 @@ import type { Config } from "../config/schema.js";
 import { parseConfig } from "../config/schema.js";
 import { audit, type AuditRecord } from "../observability/logger.js";
 import { ask, type PermissionEvent, type Reviewer } from "../types.js";
+import type { EvidenceSource } from "./project-review.js";
 import { ReviewEngine } from "./review-engine.js";
 
 export interface GateDependencies {
@@ -9,6 +10,7 @@ export interface GateDependencies {
   reviewer: (config: Config) => Reviewer;
   command: (event: PermissionEvent) => string | undefined;
   context: (sessionID: string, config: Config) => Promise<readonly string[]>;
+  project?: (config: Config) => EvidenceSource;
   log?: (record: AuditRecord) => void;
 }
 export function createGate(deps: GateDependencies) {
@@ -19,7 +21,7 @@ export function createGate(deps: GateDependencies) {
     /* Register a fail-safe hook even for invalid options. */
   }
   const engine = config?.enabled
-    ? new ReviewEngine(config, deps.reviewer(config))
+    ? new ReviewEngine(config, deps.reviewer(config), deps.project?.(config))
     : undefined;
   let closed = false;
   return {
@@ -46,6 +48,7 @@ export function createGate(deps: GateDependencies) {
                   config.context.enabled
                     ? () => deps.context(event.sessionID, config)
                     : undefined,
+                  event.sessionID,
                 );
           if (
             result.decision === "allow" &&
