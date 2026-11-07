@@ -1,3 +1,7 @@
+# GitHub staged release result — 2026-11-07
+
+Manual GitHub Actions run [42387293653](https://github.com/cesarus777/opencode-censor/actions/runs/42387293653) on commit `52e8e13` completed successfully. Its validation, controlled native smoke, archive inspection/standalone installation, and `npm stage publish` steps all passed. npm registry metadata still reported `latest: 0.1.0` immediately afterward, consistent with 0.1.1 awaiting maintainer review and 2FA approval. Approval and live publication have not yet been verified.
+
 # Staged 0.1.1 workflow — 2026-11-07
 
 The two `v0.1.1` tag workflow attempts passed validation and native smoke, but direct `npm publish` failed with `E403 OIDC permission denied for this action`: the trusted publisher allows staging but not direct publication. The workflow now uses npm 11.21.0 and `npm stage publish`, and supports a manual `main` run with an explicit matching version so the already-pushed tag does not need rewriting. The exact npm stage command passed a local dry run against the inspected 0.1.1 archive; this did not submit it. npm approval with 2FA remains necessary before the version becomes public. The earlier local direct publish attempt was rejected with `EOTP`; a proposed local staging command was interrupted before a result was returned, so it is not counted as a successful stage.
