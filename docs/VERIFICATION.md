@@ -1,3 +1,7 @@
+# Approved npm publication — 2026-11-07
+
+The maintainer approved staged `@cesarus777/opencode-censor@0.1.1` with npm 2FA. Registry metadata now reports `latest: 0.1.1` and SHA-1 `c8a0a08cdb286288d3176405c42a91247666bc16`. The downloaded public tarball matches that checksum; its `dist/index.js` and `dist/stats.js` match the local build byte-for-byte, and its package metadata exposes `censor-stats`. This confirms publication, not real-provider or interactive-client acceptance.
+
 # GitHub staged release result — 2026-11-07
 
 Manual GitHub Actions run [42387293653](https://github.com/cesarus777/opencode-censor/actions/runs/42387293653) on commit `52e8e13` completed successfully. Its validation, controlled native smoke, archive inspection/standalone installation, and `npm stage publish` steps all passed. npm registry metadata still reported `latest: 0.1.0` immediately afterward, consistent with 0.1.1 awaiting maintainer review and 2FA approval. Approval and live publication have not yet been verified.
