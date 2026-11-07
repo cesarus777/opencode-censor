@@ -36,10 +36,24 @@ export class ReviewEngine {
         const labels = context ? await context() : [];
         if (controller.signal.aborted) return ask("cancelled");
         const text = await this.reviewer.generate(
-          buildPrompt({ ...input, context: labels }, this.config.mode),
+          buildPrompt(
+            { ...input, context: labels },
+            this.config.mode,
+            this.config.systemPrompt,
+          ),
           controller.signal,
         );
-        return applyPolicy(input, parseDecision(text), this.config.mode);
+        let review;
+        try {
+          review = parseDecision(text);
+        } catch {
+          return ask("invalid_review_response");
+        }
+        return {
+          ...applyPolicy(input, review, this.config.mode),
+          reviewerDecision: review.decision,
+          reviewerRiskLevel: review.riskLevel,
+        };
       })
       .catch(() => ask("review_error"))
       .finally(() => this.pending.delete(controller));

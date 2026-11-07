@@ -6,6 +6,7 @@ export interface Config {
   model: { providerID: string; id: string };
   mode: Mode;
   fallback: "ask";
+  systemPrompt: string;
   timeoutMs: number;
   context: { enabled: boolean; maxMessages: number; maxCharacters: number };
   logging: {
@@ -66,6 +67,7 @@ export function parseConfig(value: unknown): Config {
     "model",
     "mode",
     "fallback",
+    "systemPrompt",
     "timeoutMs",
     "context",
     "logging",
@@ -84,6 +86,13 @@ export function parseConfig(value: unknown): Config {
     "file",
   ]);
   const cache = section(root.cache, ["enabled"]);
+  const systemPrompt = root.systemPrompt === undefined ? "" : root.systemPrompt;
+  if (
+    typeof systemPrompt !== "string" ||
+    systemPrompt.length > 6000 ||
+    systemPrompt.includes("\0")
+  )
+    throw new Error("Invalid system prompt");
   const mode = root.mode ?? "balanced";
   if (mode !== "strict" && mode !== "balanced" && mode !== "permissive")
     throw new Error("Invalid mode");
@@ -109,6 +118,7 @@ export function parseConfig(value: unknown): Config {
     },
     mode,
     fallback: "ask",
+    systemPrompt,
     timeoutMs: integer(root.timeoutMs, 15000, 10, 60000),
     context: {
       enabled: bool(context.enabled, false),

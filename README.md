@@ -104,6 +104,7 @@ Options are read once during setup from `ctx.options`. Reload the plugin after c
 | `model.providerID`        | required       | OpenCode provider ID, independent of the agent model                                                                                        |
 | `model.id`                | required       | OpenCode model ID; no automatic fallback to another model                                                                                   |
 | `mode`                    | `balanced`     | `strict`, `balanced`, or `permissive`                                                                                                       |
+| `systemPrompt`            | `""`           | Additional operator review instructions; at most 6000 characters; cannot override local policy                                              |
 | `fallback`                | `ask`          | Only `ask` is supported                                                                                                                     |
 | `timeoutMs`               | `15000`        | Integer 10–60000; covers context retrieval and generation together                                                                          |
 | `context.enabled`         | `false`        | Opt in to local extraction of task-intent labels                                                                                            |
@@ -116,6 +117,27 @@ Options are read once during setup from `ctx.options`. Reload the plugin after c
 | `cache.enabled`           | `false`        | Only `false` supported; no cached or transferable approvals                                                                                 |
 
 Unknown keys, bad types, invalid bounds, unsupported sensitive options, or a missing model install a fail-safe hook that changes in-scope decisions to `ask`. Invalid configuration emits fixed metadata without echoing supplied values. Check `event.message` or audit records for `invalid_configuration`. Explicit `deny` and other permission actions remain unchanged.
+
+### Custom reviewer instructions
+
+`mode` sets the caution level: `strict`, `balanced` (default), or `permissive`.
+Add `systemPrompt` to the existing plugin options for extra review instructions:
+
+```json
+{
+  "mode": "strict",
+  "systemPrompt": "Treat uncertain intent as suspicious. Ask whenever repository inspection could disclose sensitive information. Require clear evidence before recommending allow."
+}
+```
+
+Keep the required `model` option alongside these fields. `systemPrompt` defaults to
+an empty string and accepts at most 6000 characters, without NUL characters.
+It is sent to your reviewer provider; do not put secrets in it. Reload after edits.
+The pinned SDK accepts one prompt string, so this option supplements the built-in
+instructions rather than creating a separate provider system message. It cannot
+expand the local command grammar, replace the JSON response contract, or bypass
+source checks. Custom instructions can request greater caution; a prompt asking
+for broader approvals cannot make unsupported commands eligible.
 
 ## Decision criteria and modes
 
@@ -163,7 +185,7 @@ Correlation is keyed by session/message/call, capped at 256 entries, expires log
 
 ## Audit and troubleshooting
 
-JSON audit records contain timestamp, `shell` action, final decision, risk, elapsed milliseconds, a fixed reason code, and fallback status. They contain no full commands, context, session identifiers, provider output, exception messages or analytics payloads. Risk defaults to `medium` when unknown; a skipped high-risk command is not a complete risk assessment. The public SDK has no general plugin logger. Records go to a separate JSONL file. A file write failure cannot turn `ask` into `allow`, but can make counts incomplete. Invalid configuration falls back to stderr. Keep the file private and rotate/archive it as needed.
+JSON audit records contain timestamp, `shell` action, final decision, risk, elapsed milliseconds, a fixed reason code, and fallback status. Validated replies also add `reviewerDecision` and `reviewerRiskLevel`, distinct from the final policy decision. Malformed replies produce `invalid_review_response`; provider/context failures produce `review_error`. Missing reviewer fields mean no validated reply is attached, not a model rejection. Records contain no full commands, context, session identifiers, raw provider output, exception messages or analytics payloads. Risk defaults to `medium` when unknown; a skipped high-risk command is not a complete risk assessment. The public SDK has no general plugin logger. Records go to a separate JSONL file. A file write failure cannot turn `ask` into `allow`, but can make counts incomplete. Invalid configuration falls back to stderr. Keep the file private and rotate/archive it as needed.
 
 After starting OpenCode with this plugin, run `censor-stats` from a standalone installation, or `bun run stats` in this checkout after building. Pass a custom audit path as the first argument, for example `bun run stats /absolute/path/audit.jsonl`. The report shows automatic approvals divided by all audited shell evaluations. `ask` means sent to native approval, not necessarily rejected; native configured denies, non-shell actions, and later human decisions are outside the count. Set `logging.level` to `info` for complete totals.
 

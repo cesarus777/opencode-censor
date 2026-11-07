@@ -1,3 +1,20 @@
+# Custom reviewer instructions and decision diagnostics — 2026-11-07
+
+Added bounded optional `systemPrompt` instructions alongside the existing caution
+modes. The SDK still receives one prompt string; eligibility and the automatic
+approval grammar are unchanged. Audit records expose validated reviewer decision
+and risk enums, never raw replies or reasons. Invalid replies now have the fixed
+`invalid_review_response` code, separate from provider/context failures.
+
+Bun 1.3.11 frozen installation, typecheck, formatting, 104 deterministic tests
+(224 assertions), build, and archive inspection/standalone installation passed.
+The 54-file archive imported successfully in Bun and Node with installation
+lifecycle scripts disabled. Tests cover custom instructions that attempt
+to broaden approval, invalid prompt configuration, sanitized reviewer metadata,
+and malformed reply diagnostics. No remote reviewer or interactive client test
+was run for this change. The operator-supplied repository audit contained only
+local `policy_requires_review` outcomes; those records do not establish model calls.
+
 # Approved npm publication — 2026-11-07
 
 The maintainer approved staged `@cesarus777/opencode-censor@0.1.1` with npm 2FA. Registry metadata now reports `latest: 0.1.1` and SHA-1 `c8a0a08cdb286288d3176405c42a91247666bc16`. The downloaded public tarball matches that checksum; its `dist/index.js` and `dist/stats.js` match the local build byte-for-byte, and its package metadata exposes `censor-stats`. This confirms publication, not real-provider or interactive-client acceptance.

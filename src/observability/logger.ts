@@ -9,6 +9,8 @@ export interface AuditRecord {
   durationMs: number;
   reason: string;
   fallback: boolean;
+  reviewerDecision?: Outcome["reviewerDecision"];
+  reviewerRiskLevel?: Outcome["reviewerRiskLevel"];
 }
 export function audit(
   config: Config["logging"],
@@ -28,6 +30,12 @@ export function audit(
     durationMs: Math.max(0, Math.round(durationMs)),
     reason: outcome.code,
     fallback: outcome.fallback,
+    ...(outcome.reviewerDecision
+      ? { reviewerDecision: outcome.reviewerDecision }
+      : {}),
+    ...(outcome.reviewerRiskLevel
+      ? { reviewerRiskLevel: outcome.reviewerRiskLevel }
+      : {}),
   };
   try {
     sink(record);

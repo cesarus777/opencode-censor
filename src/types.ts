@@ -5,7 +5,12 @@ export type ReviewDecision = {
   reason: string;
   confidence?: number;
 };
-export type Outcome = ReviewDecision & { code: string; fallback: boolean };
+export type Outcome = ReviewDecision & {
+  code: string;
+  fallback: boolean;
+  reviewerDecision?: ReviewDecision["decision"];
+  reviewerRiskLevel?: ReviewDecision["riskLevel"];
+};
 export interface PermissionEvent {
   readonly sessionID: string;
   readonly action: string;

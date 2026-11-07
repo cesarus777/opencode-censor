@@ -43,3 +43,10 @@ An attempted replacement through the declared `aisdk.hook("language")` did not i
 The driver uses `tool.transform` to replace the built-in shell implementation with `permission.assert`, supplying the native tool context's session/message/call identifiers. Actual `execute.before` and `execute.after` hooks still run. A `shell.create.before` guard rejects any attempt to create a shell if substitution fails. This tests real host source correlation, permission effects, pending requests and hook lifecycle, but does not prove the original scanner or executor uses the same source shape. That remains a manual deployment acceptance check. Completed-call source removal is verified in deterministic adapter tests; a repeated assertion within a native completion hook did not emit a fresh evaluation and is not used as evidence for that property.
 
 Host startup requires temporary HTTP Basic authentication in this environment. The smoke sets a fresh per-run password and supplies it only to its local client. It does not inherit account credentials. Project probing remains inside an ignored temporary directory beneath the checkout: an initial probe in an unrelated `/tmp` project returned an empty plugin list. Do not infer plugin loading merely from successful server startup.
+
+## Custom reviewer instructions
+
+The `systemPrompt` option is bounded operator-supplied text appended to the built-in
+instructions in the existing single prompt string. It is not a new SDK parameter
+or a provider system-message role. Local eligibility, parsing, source correlation
+and final policy remain independent and unchanged.
