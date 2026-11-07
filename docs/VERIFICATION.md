@@ -1,3 +1,21 @@
+# Version 0.2.0 remote staging outcome — 2026-11-08
+
+Release commit `e6cf677` was pushed to `origin/main` and annotated tag `v0.2.0`
+was pushed to trigger staging. [Stage run 42415788046](https://github.com/cesarus777/opencode-censor/actions/runs/42415788046)
+completed successfully, including full package validation, installed-package native
+smoke, final archive inspection/installation and `npm stage publish` through
+trusted publishing. Both [main CI](https://github.com/cesarus777/opencode-censor/actions/runs/42415758540)
+and [tag CI](https://github.com/cesarus777/opencode-censor/actions/runs/42415788118)
+completed successfully.
+
+After staging, the public npm registry still reported version and `latest` 0.1.1.
+Version 0.2.0 is staged for maintainer approval; it is not yet confirmed public.
+The package's configured release process requires npm maintainer 2FA approval.
+The staged archive includes the preflight record below; this remote outcome was
+recorded afterward. Failed free-provider acceptance and deferred deployment checks
+remain outstanding. No GitHub Release object was created; the pushed tag drove
+the repository's npm deployment workflow.
+
 # Version 0.2.0 release preflight — 2026-11-08
 
 The operator authorized documentation updates, staging and committing project

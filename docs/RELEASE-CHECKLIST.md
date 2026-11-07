@@ -15,7 +15,7 @@ checklist below is historical and does not establish acceptance of this release.
 - [ ] Validate original scanner/source behavior and interactive approval on the
       intended deployment and plugin combination.
 - [x] Verify version 0.2.0 archive installation/imports and package ownership.
-- [ ] Verify remote staging outcome.
+- [x] Verify remote staging outcome: run 42415788046 succeeded; main/tag CI passed.
 - [ ] Approve the staged package on npm with maintainer 2FA and verify publication.
 
 `bun run test:live` uses a loopback mock provider. `bun run test:live:free`
