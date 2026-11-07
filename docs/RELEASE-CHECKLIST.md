@@ -3,7 +3,7 @@
 Target: `opencode-censor@0.1.0`, OpenCode and `@opencode/plugin` **2.2.5**.
 This checklist defines acceptance; unchecked items are release blockers unless explicitly deferred below, and are never implied passes. Record date, exact versions, results and restrictions in [VERIFICATION.md](VERIFICATION.md).
 
-On 2026-11-07, the operator deferred real-reviewer, native scanner, interactive approval, and private vulnerability-reporting checks until after release. Those items remain unchecked for tracking; this exception permits their deferral for the release candidate and does not establish production acceptance. Dependency-risk acceptance remains unresolved. npm authentication confirms `cesarus777` and the package lookup returns E404; availability must be checked again immediately before publication. See the latest [readiness recheck](VERIFICATION.md#release-readiness-recheck--2026-11-07).
+On 2026-11-07, the operator deferred real-reviewer, native scanner, interactive approval, and private vulnerability-reporting checks until after release. Those items remain unchecked for tracking; this exception permits their deferral for the release candidate and does not establish production acceptance. The operator subsequently accepted the two documented moderate dependency advisories and explicitly authorized npm publication of `opencode-censor@0.1.0`. Remote CI remains unverified. npm authentication confirms `cesarus777` and the package lookup returns E404. See the latest [publication preflight](VERIFICATION.md#authorized-publication-preflight--2026-11-07).
 
 ## Reproducible build and artifact
 
@@ -12,9 +12,9 @@ On 2026-11-07, the operator deferred real-reviewer, native scanner, interactive 
 - [x] Inspect the actual npm archive: compiled exports/declarations, license, security policy, changelog, examples and release documentation; exclude source tests, credentials, local configuration and dependencies.
 - [x] Install that archive outside the checkout and import its public export in Bun and Node.
 - [x] Audit the locked dependency graph; triage advisories and record remaining supply-chain risks. Two moderate transitive advisories remain documented in VERIFICATION.md; a completed audit is not acceptance of those findings.
-- [ ] Resolve the dependency advisories or obtain explicit maintainer acceptance of the remaining risk.
+- [x] Resolve the dependency advisories or obtain explicit maintainer acceptance of the remaining risk.
 
-  On 2026-11-07, the operator chose “Keep release blocked pending a dependency fix.” Risk acceptance is not granted; publication must wait for a validated dependency fix.
+  On 2026-11-07, the operator reversed the earlier blocking decision and explicitly accepted the two documented moderate transitive advisories for 0.1.0. The advisories remain unfixed; this is risk acceptance, not remediation.
 
 - [x] Confirm repository, homepage and issue metadata against the supplied repository and Git origin.
 - [ ] Enable and privately test the maintainer's vulnerability reporting route.
@@ -46,6 +46,6 @@ The inert tool replaces the native scanner/executor and the loopback provider re
 
 ## Publication authorization
 
-- [ ] Confirm npm account ownership and package-name availability immediately before publication. Availability alone is not ownership.
-- [ ] Resolve or explicitly accept outstanding acceptance blockers; do not describe partial acceptance as production readiness.
-- [ ] Obtain explicit user authorization before npm publication, remote push, tags or a GitHub release. This task authorizes none of those actions.
+- [x] Confirm npm account ownership and package-name availability immediately before publication. Authenticated as `cesarus777`; preflight package lookup returned E404. Publication succeeded, and registry metadata confirms `cesarus777` maintains `opencode-censor@0.1.0` with the tested archive checksum.
+- [x] Resolve or explicitly accept outstanding acceptance blockers; do not describe partial acceptance as production readiness. Dependency risks accepted; manual checks deferred; remote CI unverified.
+- [x] Obtain explicit user authorization before npm publication. The operator authorized publishing `opencode-censor@0.1.0` to npm and subsequently authorized committing and pushing the release documentation and workflow. Tags and GitHub releases remain unauthorized.

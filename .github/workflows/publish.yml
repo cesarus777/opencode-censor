@@ -1,0 +1,75 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - "v[0-9]*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'cesarus777/opencode-censor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+          package-manager-cache: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.6.2 --ignore-scripts --no-audit --no-fund
+      - name: Verify release tag and package
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from "node:fs";
+          const { name, version } = JSON.parse(readFileSync("package.json", "utf8"));
+          if (name !== "opencode-censor" ||
+              !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version) ||
+              process.env.GITHUB_REF_NAME !== `v${version}`) {
+            throw new Error("Release tag must match a stable package version: v<package.json version>");
+          }
+          JS
+          node --version
+          npm --version
+          bun --version
+      - run: bun install --frozen-lockfile
+      - name: Validate package
+        run: bun run check
+      - name: Install pinned native host
+        run: npm install --prefix "$RUNNER_TEMP/censor-host" --no-audit --no-fund @opencode/cli@2.2.5
+      - name: Native smoke with controlled provider and inert shell
+        env:
+          OPENCODE_BIN: ${{ runner.temp }}/censor-host/node_modules/.bin/opencode
+        run: bun run test:live
+      - name: Inspect and install the archive to publish
+        id: archive
+        run: |
+          bun run - <<'JS'
+          import { appendFile } from "node:fs/promises";
+          import { join } from "node:path";
+          import { installedPackage } from "./scripts/package-check.ts";
+          const artifact = await installedPackage();
+          const { name, version } = await Bun.file("package.json").json();
+          const tarball = join(artifact.temp, `${name}-${version}.tgz`);
+          await appendFile(process.env.GITHUB_OUTPUT, `tarball=${tarball}\n`);
+          JS
+      - name: Publish the verified archive through npm trusted publishing
+        env:
+          TARBALL: ${{ steps.archive.outputs.tarball }}
+        run: npm publish "$TARBALL" --access public --provenance --ignore-scripts --registry=https://registry.npmjs.org/

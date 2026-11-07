@@ -37,7 +37,7 @@ Only shell permission events are protected. Direct terminals, arbitrary plugin c
 
 ## Release security status
 
-The locked SDK dependency graph has two moderate advisories affecting transitive `glob` and `minimatch` versions. The review path does not call these libraries directly; SDK and host package-management exposure has not been ruled out. See [the dependency audit triage](docs/VERIFICATION.md#dependency-audit-triage) for affected versions, advisory links and the decision to retain the inspected SDK contract. An upstream fix or explicit maintainer acceptance remains a release gate.
+The locked SDK dependency graph has two moderate advisories affecting transitive `glob` and `minimatch` versions. The review path does not call these libraries directly; SDK and host package-management exposure has not been ruled out. See [the dependency audit triage](docs/VERIFICATION.md#dependency-audit-triage) for affected versions, advisory links and the decision to retain the inspected SDK contract. On 2026-11-07, the operator explicitly accepted these remaining risks for release 0.1.0. Neither advisory is fixed.
 
 The [release checklist](docs/RELEASE-CHECKLIST.md) also keeps real reviewer, native scanner and interactive approval acceptance open. The operator deferred these checks and private reporting verification until after the release candidate; none is recorded as passed. Credential-free smoke results establish only the scope recorded in [verification](docs/VERIFICATION.md).
 

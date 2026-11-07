@@ -1,5 +1,23 @@
 # Verification record
 
+## Tag-triggered publication workflow
+
+Added `.github/workflows/publish.yml` to publish stable `v<version>` tags matching `package.json`. It runs the full package checks and pinned native smoke before inspecting, installing and publishing the exact final archive. Authentication uses npm trusted publishing with GitHub OIDC and provenance. The npm owner must configure repository `cesarus777/opencode-censor`, workflow filename `publish.yml`, no environment, and direct `npm publish` permission in the package settings before use. No npm token is stored in the workflow.
+
+Local validation passed: actionlint 1.7.7 (including shellcheck), Prettier, diff checks, and execution of the tag guard against matching, mismatched, prerelease, missing-prefix and shell-text tags. The exact archive-preparation step ran locally outside the sandbox: 45 archive files inspected, standalone installation and Bun/Node imports passed, and the exported Actions output pointed to the retained tarball. The workflow pins npm 11.6.2 for trusted-publishing support.
+
+The workflow has not run in GitHub Actions, and the trusted publisher configuration has not been verified. Adding this file did not push a tag or publish another version. Existing local release verification below does not establish a remote workflow pass.
+
+## Authorized publication preflight — 2026-11-07
+
+The operator reversed the earlier release-blocking decision, explicitly accepted the two documented moderate transitive `glob` and `minimatch` advisories, and authorized publication of `opencode-censor@0.1.0` to npm. The latest registry audit still reports both advisories; neither is fixed. The earlier records below describe historical decisions and are superseded by this acceptance.
+
+Final frozen installation passed with Bun 1.3.11 and no dependency changes. Typecheck, formatting, all 95 deterministic tests and build passed again with Node 26.11.1 available. npm authentication confirms `cesarus777`; the final preflight name lookup returned E404. Archive inspection (45 files), isolated installation with lifecycle scripts disabled, Bun/Node imports and the installed-package native smoke all passed outside the sandbox. The smoke again covered source hooks, allow/ask/error/deny, completion, timeout and late reply, ten concurrent requests with eight admitted reviews, and reload cleanup. Provider abort observations remained zero. Its controlled provider and inert shell do not validate the real scanner or interactive client.
+
+Real-provider, native scanner, interactive approval and private vulnerability-reporting checks remain deferred by the operator until after release. Remote GitHub Actions execution is unverified. Production acceptance is incomplete. At publication, only npm publication was authorized; remote push, tags and GitHub releases were outside that authorization.
+
+Publication completed after the operator authenticated through npm's browser two-factor flow. The exact inspected and installed tarball was published with lifecycle scripts disabled. Registry metadata confirms `opencode-censor@0.1.0`, maintainer `cesarus777` and `latest: 0.1.0`. Its SHA-1 checksum `f0252d122d153497415f603ededcd2459d9cf2e6` matches the tested archive. The archive contains the prepublication verification record; this outcome was added to the checkout after publication. No remote push, tag or GitHub release was performed.
+
 ## Release readiness recheck — 2026-11-07
 
 Rechecked commit `cb135f0` on 2026-11-07, before the documentation updates below. Bun 1.3.11 and Node 26.11.1 were used; the default Bun remains 1.1.34 and must not be used for release checks.

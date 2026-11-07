@@ -29,7 +29,7 @@ Scanner resources may omit shell operators, redirections, or other parts of the 
 
 ## Install from npm
 
-After the maintainer publishes the package, OpenCode can install it directly from configuration; no source copying is needed:
+OpenCode can install the package directly from configuration; no source copying is needed:
 
 ```jsonc
 {
@@ -54,7 +54,7 @@ After the maintainer publishes the package, OpenCode can install it directly fro
 
 For **global** activation, put the configuration in `~/.config/opencode/opencode.jsonc`. For **project** activation, put it in `<project>/opencode.jsonc` or `<project>/.opencode/opencode.jsonc`. Merge entries with existing configuration; do not duplicate the plugin. OpenCode's managed configuration and rule precedence still apply. Keep independent hard-deny rules for operations that must never run.
 
-This workspace does not publish to npm. The registry lookup on 2026-11-07 returned 404 for this package name. Availability is not ownership and must be rechecked before release. If occupied later, choose an owned scope such as `@YOUR_SCOPE/opencode-censor` and update `package.json` and config references.
+`opencode-censor@0.1.0` is published on npm under the account `cesarus777`. See [verification](docs/VERIFICATION.md) for release status, accepted dependency risks and deferred deployment checks.
 
 ## Install local source or a tarball
 
@@ -215,7 +215,7 @@ This installs the npm archive into an isolated consumer and starts exactly OpenC
 
 The replacement tool does not validate the built-in shell scanner/executor. Real reviewer and interactive native-client acceptance remain mandatory; follow the [release checklist](docs/RELEASE-CHECKLIST.md) and record evidence in [verification](docs/VERIFICATION.md). Provider cancellation is limited by the pinned SDK adapter even when native permission waiting is bounded.
 
-Source and non-sensitive bug reports: [cesarus777/opencode-censor](https://github.com/cesarus777/opencode-censor). Security reports must follow [SECURITY.md](SECURITY.md). Before publishing, complete the checklist, triage dependency advisories, verify the private reporting channel, confirm npm ownership and inspect/install the final archive. `npm view` checks availability, not ownership. See [CHANGELOG.md](CHANGELOG.md) for the unreleased 0.1.0 changes.
+Source and non-sensitive bug reports: [cesarus777/opencode-censor](https://github.com/cesarus777/opencode-censor). Security reports must follow [SECURITY.md](SECURITY.md). Before publishing, complete or explicitly defer the checklist items, triage dependency advisories, confirm npm account access and inspect/install the final archive. Private reporting and deployment verification remain deferred for 0.1.0; the two moderate dependency advisories are explicitly accepted. `npm view` checks availability, not ownership. See [CHANGELOG.md](CHANGELOG.md) for the 0.1.0 changes.
 
 Only a maintainer with explicit publication authorization should run:
 
@@ -223,4 +223,8 @@ Only a maintainer with explicit publication authorization should run:
 npm publish --access public
 ```
 
-No command in the build or test workflow publishes the package.
+The build and test scripts do not publish. The [publish workflow](.github/workflows/publish.yml) publishes automatically when a stable version tag such as `v0.1.1` is pushed. The tag must match `package.json` exactly. It runs the full checks and native smoke, then inspects and installs the exact archive it publishes with lifecycle scripts disabled.
+
+Before the first Actions publication, configure a GitHub Actions trusted publisher in the npm package's Settings: owner `cesarus777`, repository `opencode-censor`, workflow filename `publish.yml`, and no environment name. Allow direct `npm publish`. The workflow uses Node 24, GitHub-hosted runners and OIDC; no `NPM_TOKEN` secret is needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
+
+For each release, update the package version, changelog and verification record, review outstanding dependency risks and deployment acceptance, and commit the release changes. Push the matching tag only when publication is intended. Version `0.1.0` is already published and cannot be published again; use a new version for the next release. The workflow publishes stable versions to `latest`; prerelease versions are rejected.
