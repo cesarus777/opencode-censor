@@ -1,20 +1,29 @@
-# Development acceptance supplement
+# Version 0.2.0 acceptance supplement
 
-The generic stateful implementation is unreleased. Its current validation evidence
-is recorded at the top of [VERIFICATION.md](VERIFICATION.md); the checklist below
-is historical release 0.1.0 acceptance, not acceptance of the development tree.
+This release includes opt-in generic stateful review, custom reviewer instructions
+and the free-provider integration harness. Stateless inspection remains the default.
+Current evidence is recorded in [VERIFICATION.md](VERIFICATION.md); the 0.1.0
+checklist below is historical and does not establish acceptance of this release.
 
-- [x] Deterministic generic evidence-loop and protocol regression tests pass.
+- [x] Deterministic generic evidence-loop, protocol and free-model selection tests pass.
 - [x] Installed-package native probe covers generic allow, model ask, unavailable
       evidence and stateful inspection, with a controlled provider and inert shell.
+- [x] Implement a separate opt-in built-in free-provider harness and manual workflow.
+- [ ] Complete real-provider acceptance: `opencode/big-pickle` returned safe
+      `review_error` fallback; no real-model automatic allow has been verified.
 - [ ] Validate real reviewer judgment for intended build tools and languages.
 - [ ] Validate original scanner/source behavior and interactive approval on the
       intended deployment and plugin combination.
-- [ ] Complete release-specific version, archive and ownership checks before any
-      separately authorized publication.
+- [x] Verify version 0.2.0 archive installation/imports and package ownership.
+- [ ] Verify remote staging outcome.
+- [ ] Approve the staged package on npm with maintainer 2FA and verify publication.
 
-`bun run test:live` always uses a loopback mock provider and consumes no remote
-allowance. A real-provider automated acceptance harness is not implemented.
+`bun run test:live` uses a loopback mock provider. `bun run test:live:free`
+requires an explicitly selected built-in model with nonempty all-zero catalog
+pricing; it uses synthetic input and an inert shell. Both leave the original
+scanner and interactive acceptance untested. The operator authorized committing,
+pushing and releasing this tree on 2026-11-08 with these outstanding checks
+reported explicitly; production acceptance remains incomplete.
 
 # First release acceptance checklist
 
@@ -68,4 +77,4 @@ The inert tool replaces the native scanner/executor and the loopback provider re
 
 - [x] Confirm npm account ownership and package-name availability immediately before publication. Authenticated as `cesarus777`; preflight package lookup returned E404. Publication succeeded, and registry metadata confirms `cesarus777` maintains `opencode-censor@0.1.0` with the tested archive checksum.
 - [x] Resolve or explicitly accept outstanding acceptance blockers; do not describe partial acceptance as production readiness. Dependency risks accepted; manual checks deferred; remote CI unverified.
-- [x] Obtain explicit user authorization before npm publication. The operator authorized publishing `opencode-censor@0.1.0` to npm and subsequently authorized committing and pushing the release documentation and workflow. Tags and GitHub releases remain unauthorized.
+- [x] Obtain explicit user authorization before npm publication. The operator authorized publishing `opencode-censor@0.1.0` to npm and subsequently authorized committing and pushing the release documentation and workflow. At that historical release, tags and GitHub releases were outside the authorization.

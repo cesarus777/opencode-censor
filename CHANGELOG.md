@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — stateful review and provider checks (2026-11-08)
 
+- Add an opt-in native free-provider integration check with explicit zero-price model validation and a manual CI workflow. Real-provider acceptance remains incomplete: the tested reviewer returned safe `review_error` fallback.
 - Add bounded custom reviewer instructions and sanitized reviewer decision/risk diagnostics.
 - Add generic opt-in stateful project review through bounded read/list/literal-search evidence requests, explicit path-scoped disclosure and revalidated session findings. Remove command-specific Make/Bash parsers and trusted-step lists.
 - Require fresh review and unchanged evidence for each operation; keep stateless inspection as the default.

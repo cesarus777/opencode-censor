@@ -78,3 +78,20 @@ Promise declaration. Cleanup uses `await` with try/catch rather than chaining
 The controlled native smoke adds a generic evidence request/final-decision phase
 using the installed archive, inert replacement shell and loopback provider. This
 is separate from original-scanner, remote-provider and interactive-client acceptance.
+
+## Built-in free-provider harness
+
+The pinned 2.2.5 client exposes `model.list({ location, types: ["chat"] })`,
+returning `data: ModelInfo[]`. `ModelInfo` contains `providerID`, `enabled`,
+`status`, text capabilities and a `cost` array with input/output/cache prices
+for each tier. An empty array does not prove free usage. The new harness accepts
+only an explicitly selected `opencode` model with nonempty all-zero pricing;
+it never adds custom pricing or silently falls back to another model.
+
+`scripts/free-provider-smoke.ts` reuses the existing installed-archive checker,
+loopback working provider and inert native driver. Discovery runs before loading
+the plugin. It then reloads with the selected native reviewer, preserving isolated
+HOME/XDG paths and synthetic fixtures. Only one eligible stateless review is
+submitted; host-internal retries remain possible. Provider errors and conservative
+asks are reported as incomplete acceptance, without exposing provider responses
+or host diagnostics. Remote stateful and original-scanner acceptance are deferred.

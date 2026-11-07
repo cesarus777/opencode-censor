@@ -1,6 +1,6 @@
 {
   "name": "@cesarus777/opencode-censor",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Fail-safe native OpenCode V2 shell permission reviews using an independent model",
   "license": "MIT",
   "publishConfig": {
@@ -45,7 +45,8 @@
     "test:package": "bun scripts/package-check.ts",
     "check": "bun run typecheck && bun run lint && bun test tests && bun run build && bun run test:package",
     "prepack": "bun run build",
-    "stats": "node dist/stats.js"
+    "stats": "node dist/stats.js",
+    "test:live:free": "bun scripts/free-provider-smoke.ts"
   },
   "dependencies": {
     "@opencode/plugin": "2.2.5"

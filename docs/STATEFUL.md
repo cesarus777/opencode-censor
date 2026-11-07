@@ -7,8 +7,8 @@ The model judges execution semantics. Local code enforces source correlation,
 configured disclosure, observable command restrictions, budgets, response validation
 and evidence freshness. It does not prove arbitrary programs safe or isolate them.
 
-Stateless inspection remains the default. Use a local development build; published
-0.1.1 does not support these options. Merge this into plugin options alongside `model`:
+Stateless inspection remains the default. These options require version 0.2.0
+or later (or a local build). Merge this into plugin options alongside `model`:
 
 ```json
 {

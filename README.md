@@ -2,7 +2,7 @@
 
 A native OpenCode V2 server plugin that asks a separately selected model to review shell permissions before execution. The model can recommend `allow` or `ask`; OpenCode executes the action and owns the approval interface. The plugin contains no shell executor, agent, terminal, backend, or approval UI.
 
-Published version 0.1.1 targets **OpenCode / `@opencode/plugin` 2.2.5** and deliberately approves a small set of inspection commands. This is a security-sensitive initial release candidate. Package import and mocked integration are distinct from a live provider test; see [verification](docs/VERIFICATION.md) and [SDK research](docs/RESEARCH.md).
+Release 0.2.0 targets **OpenCode / `@opencode/plugin` 2.2.5** and defaults to a small set of inspection commands. This is a security-sensitive initial release candidate. Package import and mocked integration are distinct from a live provider test; see [verification](docs/VERIFICATION.md) and [SDK research](docs/RESEARCH.md).
 
 ## How it works
 
@@ -29,11 +29,10 @@ The `tool.execute.before` hook only observes input. The `permission.evaluate` ho
 
 Scanner resources may omit shell operators, redirections, or other parts of the source. Stateless automatic approval therefore requires a matching captured **complete** tool command, one identical scanner resource, and a command accepted by the local inspection grammar. Missing source identifiers, expired correlation, multiple resources, changed input, an external `workdir`, or unsupported shell syntax produce `ask`. A resource that happens to say `pwd` is insufficient on its own.
 
-The development checkout also supports opt-in [stateful project review](docs/STATEFUL.md)
+Version 0.2.0 also supports opt-in [stateful project review](docs/STATEFUL.md)
 for generic commands with bounded, model-requested project evidence. Stateful
 mode delegates program semantics to the reviewer and enforces local evidence,
-budget and approval constraints; it does not interpret build tools or languages. This feature and custom
-reviewer instructions are not available in published 0.1.1; use a local build.
+budget and approval constraints; it does not interpret build tools or languages. These options and custom reviewer instructions require version 0.2.0 or later.
 
 ## Install from npm
 
@@ -44,7 +43,7 @@ OpenCode can install the package directly from configuration; no source copying 
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "@cesarus777/opencode-censor@0.1.1",
+      "package": "@cesarus777/opencode-censor@0.2.0",
       "options": {
         "model": { "providerID": "anthropic", "id": "MODEL_ID" },
       },
@@ -62,7 +61,7 @@ OpenCode can install the package directly from configuration; no source copying 
 
 For **global** activation, put the configuration in `~/.config/opencode/opencode.jsonc`. For **project** activation, put it in `<project>/opencode.jsonc` or `<project>/.opencode/opencode.jsonc`. Merge entries with existing configuration; do not duplicate the plugin. OpenCode's managed configuration and rule precedence still apply. Keep independent hard-deny rules for operations that must never run.
 
-`@cesarus777/opencode-censor@0.1.1` is published on npm and adds local audit reporting. The earlier unscoped `opencode-censor` package is deprecated: replace its configuration entry with `@cesarus777/opencode-censor@0.1.1` and do not load both packages. The plugin ID remains `opencode-censor`. See [verification](docs/VERIFICATION.md) for publication status, accepted dependency risks and deferred deployment checks.
+`@cesarus777/opencode-censor@0.2.0` adds opt-in stateful review, custom reviewer instructions and free-provider integration checks. Publication status is recorded in [verification](docs/VERIFICATION.md). The earlier unscoped `opencode-censor` package is deprecated: replace its configuration entry with `@cesarus777/opencode-censor@0.2.0` and do not load both packages. The plugin ID remains `opencode-censor`. See [verification](docs/VERIFICATION.md) for publication status, accepted dependency risks and deferred deployment checks.
 
 ## Install local source or a tarball
 
@@ -97,7 +96,7 @@ To distribute a standalone archive:
 ```sh
 bun run build
 npm pack
-npm install --prefix /path/to/plugins ./cesarus777-opencode-censor-0.1.1.tgz
+npm install --prefix /path/to/plugins ./cesarus777-opencode-censor-0.2.0.tgz
 ```
 
 Set `plugins[].package` to `/path/to/plugins/node_modules/@cesarus777/opencode-censor`. The installed package contains compiled JavaScript, declarations, license, documentation and examples; it does not require copying this repository into each project.
@@ -251,10 +250,43 @@ This command always uses the controlled loopback provider and consumes no remote
 
 The replacement tool does not validate the built-in shell scanner/executor. Real reviewer and interactive native-client acceptance remain mandatory; follow the [release checklist](docs/RELEASE-CHECKLIST.md) and record evidence in [verification](docs/VERIFICATION.md). Provider cancellation is limited by the pinned SDK adapter even when native permission waiting is bounded.
 
-Source and non-sensitive bug reports: [cesarus777/opencode-censor](https://github.com/cesarus777/opencode-censor). Security reports must follow [SECURITY.md](SECURITY.md). Before publishing, complete or explicitly defer the checklist items, triage dependency advisories, confirm npm account access and inspect/install the final archive. Private reporting and deployment verification remain deferred for 0.1.0; the two moderate dependency advisories are explicitly accepted. `npm view` checks availability, not ownership. See [CHANGELOG.md](CHANGELOG.md) for release changes.
+Source and non-sensitive bug reports: [cesarus777/opencode-censor](https://github.com/cesarus777/opencode-censor). Security reports must follow [SECURITY.md](SECURITY.md). Before publishing, complete or explicitly defer the checklist items, triage dependency advisories, confirm npm account access and inspect/install the final archive. Private reporting and deployment verification remain outstanding; the two moderate dependency advisories are explicitly accepted. `npm view` checks availability, not ownership. See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
-The build and test scripts do not stage or publish. The [staging workflow](.github/workflows/publish.yml) stages a verified archive when a stable version tag is pushed, or when manually run on `main` with the matching package version. It runs the full checks and native smoke, then inspects and installs the exact archive it stages with lifecycle scripts disabled. A maintainer must approve the staged package with 2FA on npm before it becomes public. For `0.1.1`, run the workflow manually on `main` with version `0.1.1`; the earlier tag run used the former direct-publish workflow and failed at npm authorization.
+The build and test scripts do not stage or publish. The [staging workflow](.github/workflows/publish.yml) stages a verified archive when a stable version tag is pushed, or when manually run on `main` with the matching package version. It runs the full checks and native smoke, then inspects and installs the exact archive it stages with lifecycle scripts disabled. A maintainer must approve the staged package with 2FA on npm before it becomes public. For `0.2.0`, push tag `v0.2.0` or run the workflow manually on `main` with version `0.2.0`.
 
 Before the first Actions publication, configure a GitHub Actions trusted publisher in the **scoped package's** npm Settings: owner `cesarus777`, repository `opencode-censor`, workflow filename `publish.yml`, and no environment name. A publisher configured for the old unscoped package does not transfer. Allow `npm stage publish` (enabled by default). The workflow uses Node 24, GitHub-hosted runners and OIDC; no `NPM_TOKEN` secret is needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
 
 For each release, update the package version, changelog and verification record, review outstanding dependency risks and deployment acceptance, and commit the release changes. Push the matching tag only when staging is intended; approve the staged package on npm to make it public. The scoped package starts at `0.1.0`; after its initial publication, use a new version for the next release. After npm approval, stable versions become available under `latest`; prerelease versions are rejected.
+
+### Free-provider integration check
+
+`bun run test:live:free` loads the installed archive into isolated OpenCode 2.2.5
+and uses its built-in `opencode` provider for the reviewer. Select a model explicitly:
+
+```sh
+CENSOR_FREE_MODEL=YOUR_FREE_MODEL_ID OPENCODE_BIN=/absolute/path/to/opencode bun run test:live:free
+```
+
+Use Bun 1.3.11 or later on `PATH` (including for nested scripts) and build first.
+The host catalog must report an enabled text model with explicit zero input,
+output and cache prices in every pricing tier. Missing pricing, unavailable models
+and paid models fail preflight; there is no model fallback. Catalog pricing is a
+preflight check, not a billing guarantee. The check does not inherit account
+credentials or personal host configuration. A model requiring authentication will
+fail safely rather than use your saved account.
+
+Only synthetic inspection input reaches the remote reviewer. A deterministic
+loopback working model drives an inert replacement shell; reviewed commands never
+execute and pending permissions are never answered. The suite checks missing
+source, local policy ask, native deny, one real stateless reviewer decision and
+reload cleanup. It reports fixed reason codes and exits unsuccessfully if the
+reviewer cannot produce a valid automatic allow, including when a safe ask results
+from provider errors, invalid JSON or timeout. The review deadline is 15 seconds;
+a host watchdog stops the isolated process after two minutes. Native provider
+retries and transport cancellation remain host controlled.
+
+The **Free provider acceptance** GitHub workflow is manual and accepts a model ID.
+It is separate from required deterministic CI. Free model availability changes;
+model discovery and zero-price validation occur on each run. Stateful remote
+review, the original native scanner and interactive approval acceptance remain
+separate from this check.

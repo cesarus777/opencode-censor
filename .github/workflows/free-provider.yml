@@ -1,0 +1,31 @@
+name: Free provider acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Built-in opencode model ID (must have explicit zero pricing)
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  free-reviewer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Install pinned native host
+        run: npm install --prefix "$RUNNER_TEMP/censor-host" --no-audit --no-fund @opencode/cli@2.2.5
+      - name: Free reviewer with inert shell
+        env:
+          OPENCODE_BIN: ${{ runner.temp }}/censor-host/node_modules/.bin/opencode
+          CENSOR_FREE_MODEL: ${{ inputs.model }}
+        run: bun run test:live:free

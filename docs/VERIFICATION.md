@@ -1,3 +1,63 @@
+# Version 0.2.0 release preflight — 2026-11-08
+
+The operator authorized documentation updates, staging and committing project
+changes, remote push and release deployment. Version 0.2.0 includes the previously
+committed stateful reviewer and custom instructions plus the new free-provider
+integration harness. Current install examples, security status, stateful guide,
+changelog and release checklist were reviewed and updated. Historical verification
+records retain their original version numbers and results.
+
+Bun 1.3.11 and Node 26.11.1: frozen installation, strict typecheck, formatting,
+156 deterministic tests (440 assertions), build and workflow syntax validation
+passed. The full check stopped at sandboxed npm pack, which returned no report;
+separate outside-sandbox package validation passed, inspecting 65 archive files,
+installing with lifecycle scripts disabled and importing through Bun and Node.
+The installed-archive native smoke passed outside the sandbox with OpenCode 2.2.5,
+covering allow/ask/error/native deny, source hooks, timeout/late reply, eight-review
+capacity under ten concurrent requests, reload cleanup and generic evidence
+allow/ask/missing-file cases. Provider abort observations remained zero.
+
+npm registry metadata confirmed `cesarus777` maintains the scoped package and
+`latest` was 0.1.1 before release. The remote main branch was `636d577` and
+`v0.2.0` was absent. Dependencies are unchanged; the previously accepted moderate
+advisories remain documented. Real free-provider acceptance remains incomplete
+(`review_error` fallback); original-scanner, interactive-client and remote stateful
+acceptance remain outstanding. No production acceptance is claimed.
+
+The release is intended for the existing tag-triggered staging workflow, followed
+by npm maintainer 2FA approval. At this preflight record, the release commit, tag,
+remote staging and npm publication have not yet completed. The unrelated local
+screenshot and audit file are excluded from staging and release artifacts.
+
+# Free-provider integration harness — 2026-11-08
+
+Added an opt-in `test:live:free` check and manual GitHub workflow for an explicitly
+selected built-in `opencode` reviewer. Selection tests reject missing or duplicate
+models, other providers, disabled/deprecated/nontext models, missing pricing,
+paid tiers and cache charges. The existing deterministic native suite is unchanged.
+The new remote suite currently covers stateless review only; remote stateful,
+original scanner and interactive UI acceptance remain outstanding.
+
+Local validation used Bun 1.3.11 and Node 26.11.1. Frozen installation,
+typecheck, formatting, 156 deterministic tests (440 assertions), and build passed.
+The live attempt inspected and installed the actual archive and passed its Bun/Node
+imports. Outside the sandbox, host 2.2.5 reported `opencode/big-pickle` with
+explicit zero pricing. Installed-plugin loading, missing-source ask, local-policy
+ask and native deny bypass passed. The eligible inspection review produced
+`ask` with fixed reason `review_error` after 513 ms; a native pending permission
+was observed. This is **incomplete real-provider acceptance**, not a pass. No
+provider response or host diagnostics were retained, and the underlying provider
+error was not diagnosed. No reviewed command executed or permission was answered.
+
+A repeat with the final harness again produced `review_error` (505 ms),
+confirmed the native pending permission and passed reload cleanup. Actionlint
+validated the manual workflow; it has not run remotely.
+
+The initial `bun run test:live:free` attempt resolved nested Bun from PATH to
+system 1.1.34 and failed the native version preflight inside the sandbox. It is
+not a pass. Subsequent checks invoked Bun 1.3.11 directly. No remote workflow,
+publication, push or release was performed.
+
 # Generic project evidence loop — 2026-11-07
 
 Replaced the development Make/Bash verifier with a generic read/list/literal-search
