@@ -17,7 +17,7 @@ The trusted computing base includes OpenCode's rule evaluation, scanner and perm
 - The response parser rejects extra fields, nested values, duplicate keys, invalid values, unknown decisions and ambiguous/contradictory allow explanations. Risk, reason and local policy checks are independent of confidence.
 - Only eligible commands cross the provider boundary. A sensitive-data tripwire supplements the grammar. Optional context transmits fixed intent labels rather than original text or file contents.
 - Per-evaluation deadlines, lifecycle cancellation and a bound of eight unsettled tasks prevent indefinite UI waiting and unbounded model requests. Late results cannot change returned effects.
-- Audit records use fixed local reason codes. No commands, histories, model output, raw error messages, credentials or analytics are logged by this plugin.
+- Audit file records use fixed local reason codes. File write failures can make counts incomplete but cannot change a permission result. No commands, histories, model output, raw error messages, credentials or analytics are logged by this plugin.
 
 ## Boundaries and residual risks
 

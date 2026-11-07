@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "opencode-censor",
+      "name": "@cesarus777/opencode-censor",
       "dependencies": {
         "@opencode/plugin": "2.2.5",
       },

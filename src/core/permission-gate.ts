@@ -70,6 +70,7 @@ export function createGate(deps: GateDependencies) {
           enabled: true,
           level: "info",
           includeCommands: false,
+          file: "",
         },
         result,
         performance.now() - started,

@@ -1,7 +1,14 @@
 # Changelog
 
+## 0.1.1 — local audit reporting (2026-11-07)
+
+- Write fixed metadata audit records to a separate local JSONL file.
+- Add `censor-stats` to count automatic approvals against audited shell evaluations.
+- Publish under the scoped package name and update the release workflow.
+
 ## 0.1.0 — initial release candidate (2026-11-07)
 
+- Migrate the npm package name to `@cesarus777/opencode-censor`; keep the native plugin ID unchanged. Update configuration entries to the scoped name and load only one package.
 - Add a native OpenCode V2 server plugin targeting SDK and host 2.2.5.
 - Review a narrow inspection grammar with an explicitly selected independent model; require strict output parsing and independent local policy for every allow.
 - Correlate full shell input with native source identifiers; preserve explicit deny and leave other permissions unchanged.

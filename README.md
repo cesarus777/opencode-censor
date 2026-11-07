@@ -1,8 +1,8 @@
-# opencode-censor
+# @cesarus777/opencode-censor
 
 A native OpenCode V2 server plugin that asks a separately selected model to review shell permissions before execution. The model can recommend `allow` or `ask`; OpenCode executes the action and owns the approval interface. The plugin contains no shell executor, agent, terminal, backend, or approval UI.
 
-Version 0.1.0 targets **OpenCode / `@opencode/plugin` 2.2.5** and deliberately approves a small set of inspection commands. This is a security-sensitive initial release candidate. Package import and mocked integration are distinct from a live provider test; see [verification](docs/VERIFICATION.md) and [SDK research](docs/RESEARCH.md).
+Version 0.1.1 targets **OpenCode / `@opencode/plugin` 2.2.5** and deliberately approves a small set of inspection commands. This is a security-sensitive initial release candidate. Package import and mocked integration are distinct from a live provider test; see [verification](docs/VERIFICATION.md) and [SDK research](docs/RESEARCH.md).
 
 ## How it works
 
@@ -36,7 +36,7 @@ OpenCode can install the package directly from configuration; no source copying 
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "opencode-censor@0.1.0",
+      "package": "@cesarus777/opencode-censor@0.1.1",
       "options": {
         "model": { "providerID": "anthropic", "id": "MODEL_ID" },
       },
@@ -54,7 +54,7 @@ OpenCode can install the package directly from configuration; no source copying 
 
 For **global** activation, put the configuration in `~/.config/opencode/opencode.jsonc`. For **project** activation, put it in `<project>/opencode.jsonc` or `<project>/.opencode/opencode.jsonc`. Merge entries with existing configuration; do not duplicate the plugin. OpenCode's managed configuration and rule precedence still apply. Keep independent hard-deny rules for operations that must never run.
 
-`opencode-censor@0.1.0` is published on npm under the account `cesarus777`. See [verification](docs/VERIFICATION.md) for release status, accepted dependency risks and deferred deployment checks.
+`@cesarus777/opencode-censor@0.1.0` is published on npm; version `0.1.1` adds local audit reporting. The earlier unscoped `opencode-censor` package is deprecated: replace its configuration entry with `@cesarus777/opencode-censor@0.1.1` and do not load both packages. The plugin ID remains `opencode-censor`. See [verification](docs/VERIFICATION.md) for publication status, accepted dependency risks and deferred deployment checks.
 
 ## Install local source or a tarball
 
@@ -89,30 +89,31 @@ To distribute a standalone archive:
 ```sh
 bun run build
 npm pack
-npm install --prefix /path/to/plugins ./opencode-censor-0.1.0.tgz
+npm install --prefix /path/to/plugins ./cesarus777-opencode-censor-0.1.1.tgz
 ```
 
-Set `plugins[].package` to `/path/to/plugins/node_modules/opencode-censor`. The installed package contains compiled JavaScript, declarations, license, documentation and examples; it does not require copying this repository into each project.
+Set `plugins[].package` to `/path/to/plugins/node_modules/@cesarus777/opencode-censor`. The installed package contains compiled JavaScript, declarations, license, documentation and examples; it does not require copying this repository into each project.
 
 ## Configuration
 
 Options are read once during setup from `ctx.options`. Reload the plugin after changing them. See [the complete example](examples/opencode.jsonc).
 
-| Option                    | Default    | Contract                                                                          |
-| ------------------------- | ---------- | --------------------------------------------------------------------------------- |
-| `enabled`                 | `true`     | `false` delegates to OpenCode rules; a valid model configuration remains required |
-| `model.providerID`        | required   | OpenCode provider ID, independent of the agent model                              |
-| `model.id`                | required   | OpenCode model ID; no automatic fallback to another model                         |
-| `mode`                    | `balanced` | `strict`, `balanced`, or `permissive`                                             |
-| `fallback`                | `ask`      | Only `ask` is supported                                                           |
-| `timeoutMs`               | `15000`    | Integer 10–60000; covers context retrieval and generation together                |
-| `context.enabled`         | `false`    | Opt in to local extraction of task-intent labels                                  |
-| `context.maxMessages`     | `5`        | Inspect at most the last 1–20 returned context entries locally                    |
-| `context.maxCharacters`   | `6000`     | Scan at most 1–12000 characters of user text locally                              |
-| `logging.enabled`         | `true`     | Write structured JSON records to server stderr                                    |
-| `logging.level`           | `info`     | `info`: all decisions; `error`: fallback records only                             |
-| `logging.includeCommands` | `false`    | Only `false` supported in this release                                            |
-| `cache.enabled`           | `false`    | Only `false` supported; no cached or transferable approvals                       |
+| Option                    | Default        | Contract                                                                                                                                    |
+| ------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`                 | `true`         | `false` delegates to OpenCode rules; a valid model configuration remains required                                                           |
+| `model.providerID`        | required       | OpenCode provider ID, independent of the agent model                                                                                        |
+| `model.id`                | required       | OpenCode model ID; no automatic fallback to another model                                                                                   |
+| `mode`                    | `balanced`     | `strict`, `balanced`, or `permissive`                                                                                                       |
+| `fallback`                | `ask`          | Only `ask` is supported                                                                                                                     |
+| `timeoutMs`               | `15000`        | Integer 10–60000; covers context retrieval and generation together                                                                          |
+| `context.enabled`         | `false`        | Opt in to local extraction of task-intent labels                                                                                            |
+| `context.maxMessages`     | `5`            | Inspect at most the last 1–20 returned context entries locally                                                                              |
+| `context.maxCharacters`   | `6000`         | Scan at most 1–12000 characters of user text locally                                                                                        |
+| `logging.enabled`         | `true`         | Write structured JSON audit records                                                                                                         |
+| `logging.level`           | `info`         | `info`: all decisions; `error`: fallback records only                                                                                       |
+| `logging.file`            | XDG state path | Absolute JSONL audit file path; defaults to `~/.local/state/opencode-censor/audit.jsonl` (or `$XDG_STATE_HOME/opencode-censor/audit.jsonl`) |
+| `logging.includeCommands` | `false`        | Only `false` supported in this release                                                                                                      |
+| `cache.enabled`           | `false`        | Only `false` supported; no cached or transferable approvals                                                                                 |
 
 Unknown keys, bad types, invalid bounds, unsupported sensitive options, or a missing model install a fail-safe hook that changes in-scope decisions to `ask`. Invalid configuration emits fixed metadata without echoing supplied values. Check `event.message` or audit records for `invalid_configuration`. Explicit `deny` and other permission actions remain unchanged.
 
@@ -162,7 +163,9 @@ Correlation is keyed by session/message/call, capped at 256 entries, expires log
 
 ## Audit and troubleshooting
 
-JSON audit records contain timestamp, `shell` action, final decision, risk, elapsed milliseconds, a fixed reason code, and fallback status. They contain no full commands, context, session identifiers, provider output, exception messages or analytics payloads. Risk defaults to `medium` when unknown; a skipped high-risk command is not a complete risk assessment. The public SDK has no general plugin logger, so stderr is used. Sink failure cannot turn `ask` into `allow`.
+JSON audit records contain timestamp, `shell` action, final decision, risk, elapsed milliseconds, a fixed reason code, and fallback status. They contain no full commands, context, session identifiers, provider output, exception messages or analytics payloads. Risk defaults to `medium` when unknown; a skipped high-risk command is not a complete risk assessment. The public SDK has no general plugin logger. Records go to a separate JSONL file. A file write failure cannot turn `ask` into `allow`, but can make counts incomplete. Invalid configuration falls back to stderr. Keep the file private and rotate/archive it as needed.
+
+After starting OpenCode with this plugin, run `censor-stats` from a standalone installation, or `bun run stats` in this checkout after building. Pass a custom audit path as the first argument, for example `bun run stats /absolute/path/audit.jsonl`. The report shows automatic approvals divided by all audited shell evaluations. `ask` means sent to native approval, not necessarily rejected; native configured denies, non-shell actions, and later human decisions are outside the count. Set `logging.level` to `info` for complete totals.
 
 | Symptom                       | Check                                                                                                                               |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -215,7 +218,7 @@ This installs the npm archive into an isolated consumer and starts exactly OpenC
 
 The replacement tool does not validate the built-in shell scanner/executor. Real reviewer and interactive native-client acceptance remain mandatory; follow the [release checklist](docs/RELEASE-CHECKLIST.md) and record evidence in [verification](docs/VERIFICATION.md). Provider cancellation is limited by the pinned SDK adapter even when native permission waiting is bounded.
 
-Source and non-sensitive bug reports: [cesarus777/opencode-censor](https://github.com/cesarus777/opencode-censor). Security reports must follow [SECURITY.md](SECURITY.md). Before publishing, complete or explicitly defer the checklist items, triage dependency advisories, confirm npm account access and inspect/install the final archive. Private reporting and deployment verification remain deferred for 0.1.0; the two moderate dependency advisories are explicitly accepted. `npm view` checks availability, not ownership. See [CHANGELOG.md](CHANGELOG.md) for the 0.1.0 changes.
+Source and non-sensitive bug reports: [cesarus777/opencode-censor](https://github.com/cesarus777/opencode-censor). Security reports must follow [SECURITY.md](SECURITY.md). Before publishing, complete or explicitly defer the checklist items, triage dependency advisories, confirm npm account access and inspect/install the final archive. Private reporting and deployment verification remain deferred for 0.1.0; the two moderate dependency advisories are explicitly accepted. `npm view` checks availability, not ownership. See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
 Only a maintainer with explicit publication authorization should run:
 
@@ -225,6 +228,6 @@ npm publish --access public
 
 The build and test scripts do not publish. The [publish workflow](.github/workflows/publish.yml) publishes automatically when a stable version tag such as `v0.1.1` is pushed. The tag must match `package.json` exactly. It runs the full checks and native smoke, then inspects and installs the exact archive it publishes with lifecycle scripts disabled.
 
-Before the first Actions publication, configure a GitHub Actions trusted publisher in the npm package's Settings: owner `cesarus777`, repository `opencode-censor`, workflow filename `publish.yml`, and no environment name. Allow direct `npm publish`. The workflow uses Node 24, GitHub-hosted runners and OIDC; no `NPM_TOKEN` secret is needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
+Before the first Actions publication, configure a GitHub Actions trusted publisher in the **scoped package's** npm Settings: owner `cesarus777`, repository `opencode-censor`, workflow filename `publish.yml`, and no environment name. A publisher configured for the old unscoped package does not transfer. Allow direct `npm publish`. The workflow uses Node 24, GitHub-hosted runners and OIDC; no `NPM_TOKEN` secret is needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
 
-For each release, update the package version, changelog and verification record, review outstanding dependency risks and deployment acceptance, and commit the release changes. Push the matching tag only when publication is intended. Version `0.1.0` is already published and cannot be published again; use a new version for the next release. The workflow publishes stable versions to `latest`; prerelease versions are rejected.
+For each release, update the package version, changelog and verification record, review outstanding dependency risks and deployment acceptance, and commit the release changes. Push the matching tag only when publication is intended. The scoped package starts at `0.1.0`; after its initial publication, use a new version for the next release. The workflow publishes stable versions to `latest`; prerelease versions are rejected.

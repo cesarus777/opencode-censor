@@ -1,4 +1,24 @@
+# Version 0.1.1 release preflight — 2026-11-07
+
+The scoped package version was bumped to 0.1.1 for separate JSONL audit output and `censor-stats`. Frozen installation, Bun 1.3.11 typecheck, formatting, 98 deterministic tests (210 assertions), build, package inspection and standalone Bun/Node imports passed. The package stage required execution outside the sandbox because sandboxed npm pack produced no report. The installed-archive native smoke passed with OpenCode 2.2.5, a controlled loopback provider, and an inert shell; provider abort observations were zero. The first smoke attempt used a non-executable npm shim and was rerun with the actual binary. The original scanner, remote reviewer and interactive client remain untested. Registry metadata showed scoped 0.1.0 owned by cesarus777 before publication.
+
+# Local audit reporting — 2026-11-07
+
+Added a dedicated JSONL audit file and `censor-stats` command. The report counts plugin `allow` and `ask` decisions and states that native denies and later human outcomes are excluded. Bun 1.3.11 typecheck, lint, 98 tests (210 assertions), build, and standalone package check passed. The installed archive contained 54 files and passed Bun and Node ESM imports. The built stats command reported 1 / 2 (50.0%) on a synthetic audit file. Unit tests cover file output, count accuracy, and malformed records. No live OpenCode provider or native scanner was used for this change. File write failure remains fail-safe for permission decisions but may make reports incomplete.
+
 # Verification record
+
+## Scoped package migration — 2026-11-07
+
+The operator authorized publishing `@cesarus777/opencode-censor@0.1.0`, updating installation examples and the tag workflow, and deprecating `opencode-censor` with a migration notice after verifying the scoped publication. The native plugin ID and permission behavior remain unchanged. The lockfile's workspace name changes without dependency updates. The archive checker imports the scoped package from its actual scoped installation path and returns npm's reported tarball path to the workflow, avoiding invalid filenames containing a scope slash.
+
+The registry audit still reports the same two accepted moderate transitive advisories; neither is fixed. Previously deferred deployment and private reporting checks remain deferred. The records below this section describe the earlier unscoped release.
+
+Scoped-package validation passed locally: frozen installation, typecheck, formatting, all 95 tests under Bun 1.3.11, build and actionlint 1.7.7. The scoped archive's 45 files were inspected and installed with lifecycle scripts disabled; Bun and Node imports and the installed-package native host 2.2.5 smoke passed outside the sandbox. The native smoke still uses an inert shell and controlled provider and observed zero provider aborts. Remote Actions and scoped trusted-publisher setup remain unverified.
+
+The exact updated workflow archive step also passed locally, exporting npm's actual scoped tarball filename; the scoped tag guard accepted the matching tag and rejected mismatches, prereleases and missing prefixes. Publication completed after npm browser authentication. Registry metadata confirms `@cesarus777/opencode-censor@0.1.0`, maintainer `cesarus777`, `latest: 0.1.0`, and SHA-1 `13fce4750746539a45fcb26d0103f9e46f2b4821`, matching the tested tarball. The registry initially returned E404 during processing and subsequently exposed the verified version.
+
+After verifying the scoped release, the old `opencode-censor` package was deprecated through npm after a separate browser authentication. Registry metadata confirms the notice directs users to `@cesarus777/opencode-censor@0.1.0` and warns against loading both packages. No package was unpublished. Publication and deprecation outcomes were added to the checkout after the archive was published. No migration commit, remote push, tag or GitHub release was created.
 
 ## Tag-triggered publication workflow
 

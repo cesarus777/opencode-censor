@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = resolve(import.meta.dir, "..");
+const packageName = "@cesarus777/opencode-censor";
 export async function installedPackage() {
   const temp = await mkdtemp(join(tmpdir(), "opencode-censor-package-"));
   function run(command: string, args: string[], cwd: string) {
@@ -78,7 +79,7 @@ export async function installedPackage() {
       JSON.stringify({
         type: "module",
         dependencies: {
-          "opencode-censor": `file:${join(temp, filename)}`,
+          [packageName]: `file:${join(temp, filename)}`,
         },
       }),
     );
@@ -96,13 +97,21 @@ export async function installedPackage() {
     console.log("Archive installed with lifecycle scripts disabled.");
     await writeFile(
       join(consumer, "check.mjs"),
-      `import plugin from "opencode-censor"; if (plugin.id !== "opencode-censor" || typeof plugin.setup !== "function") throw new Error("Invalid export"); console.log("Package import OK");`,
+      `import plugin from ${JSON.stringify(packageName)}; if (plugin.id !== "opencode-censor" || typeof plugin.setup !== "function") throw new Error("Invalid export"); console.log("Package import OK");`,
     );
     run(process.execPath, ["run", "check.mjs"], consumer);
     run("node", ["check.mjs"], consumer);
+    run(
+      "node",
+      [
+        join(consumer, "node_modules", packageName, "dist", "stats.js"),
+        "--help",
+      ],
+      consumer,
+    );
     const manifest = JSON.parse(
       await readFile(
-        join(consumer, "node_modules/opencode-censor/package.json"),
+        join(consumer, "node_modules", packageName, "package.json"),
         "utf8",
       ),
     ) as { exports: unknown };
@@ -110,7 +119,8 @@ export async function installedPackage() {
     return {
       temp,
       consumer,
-      packagePath: join(consumer, "node_modules/opencode-censor"),
+      packagePath: join(consumer, "node_modules", packageName),
+      tarball: join(temp, filename),
       files: paths.length,
     };
   } catch (error) {

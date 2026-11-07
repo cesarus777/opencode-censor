@@ -127,6 +127,7 @@ test("audit contains only fixed metadata and tolerates sink failure", () => {
     enabled: true,
     level: "info",
     includeCommands: false,
+    file: "/tmp/audit.jsonl",
   } as const;
   audit(
     logging,

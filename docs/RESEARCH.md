@@ -26,7 +26,7 @@ Promise method declarations accept request options with an AbortSignal. In 2.2.5
 
 `ctx.session.context({sessionID})` returns a readonly union of native session messages, including user entries with text and other entries with content/attachments. The input has no history limit. The adapter uses only a bounded local selection of user text and emits a small closed vocabulary of task-intent labels. It never serializes the message objects, files, attachments, assistant reasoning or tool results into prompts.
 
-`ctx.options` supplies the object form of plugin options. The package exports a default server plugin from its root. Published JavaScript plus declarations can be consumed through package exports without a transpiler or copying source into projects. No stable general plugin logging API appears on the inspected context; fixed JSON records go to stderr.
+`ctx.options` supplies the object form of plugin options. The package exports a default server plugin from its root. Published JavaScript plus declarations can be consumed through package exports without a transpiler or copying source into projects. No stable general plugin logging API appears on the inspected context; fixed JSON records go to a separate local audit file.
 
 ## Deployment implications
 

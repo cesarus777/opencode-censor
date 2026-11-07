@@ -1,6 +1,7 @@
 import { Plugin } from "@opencode/plugin";
 import { resolve, relative, isAbsolute } from "node:path";
-import { object } from "./config/schema.js";
+import { object, parseConfig } from "./config/schema.js";
+import { fileAuditSink } from "./observability/file.js";
 import { createGate } from "./core/permission-gate.js";
 import { nativeReviewer } from "./llm/reviewer.js";
 import { intentContext } from "./security/sanitization.js";
@@ -20,7 +21,14 @@ export default Plugin.define({
       { input: Record<string, unknown>; expires: number }
     >();
     const registrations: { dispose(): Promise<void> }[] = [];
+    let log: ReturnType<typeof fileAuditSink> | undefined;
+    try {
+      log = fileAuditSink(parseConfig(ctx.options).logging.file);
+    } catch {
+      // Invalid configuration is still audited to stderr by the gate.
+    }
     const gate = createGate({
+      ...(log ? { log } : {}),
       options: ctx.options,
       reviewer: (config) => nativeReviewer(ctx, config),
       command(event: PermissionEvent) {

@@ -1,7 +1,9 @@
 # First release acceptance checklist
 
-Target: `opencode-censor@0.1.0`, OpenCode and `@opencode/plugin` **2.2.5**.
+Target: `@cesarus777/opencode-censor@0.1.0`, OpenCode and `@opencode/plugin` **2.2.5**.
 This checklist defines acceptance; unchecked items are release blockers unless explicitly deferred below, and are never implied passes. Record date, exact versions, results and restrictions in [VERIFICATION.md](VERIFICATION.md).
+
+The operator authorized migrating publication to `@cesarus777/opencode-censor@0.1.0` and deprecating the unscoped package with a migration notice after the scoped package is verified. The same implementation, dependency-risk acceptance and deferred manual checks apply. The earlier unscoped publication is historical evidence; scoped archive installation and native smoke must pass separately. Configure npm trusted publishing on the scoped package before future tag-triggered releases.
 
 On 2026-11-07, the operator deferred real-reviewer, native scanner, interactive approval, and private vulnerability-reporting checks until after release. Those items remain unchecked for tracking; this exception permits their deferral for the release candidate and does not establish production acceptance. The operator subsequently accepted the two documented moderate dependency advisories and explicitly authorized npm publication of `opencode-censor@0.1.0`. Remote CI remains unverified. npm authentication confirms `cesarus777` and the package lookup returns E404. See the latest [publication preflight](VERIFICATION.md#authorized-publication-preflight--2026-11-07).
 

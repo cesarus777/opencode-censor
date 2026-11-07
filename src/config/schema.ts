@@ -1,3 +1,4 @@
+import { defaultAuditPath } from "../observability/path.js";
 import type { Mode } from "../types.js";
 
 export interface Config {
@@ -11,6 +12,7 @@ export interface Config {
     enabled: boolean;
     level: "info" | "error";
     includeCommands: false;
+    file: string;
   };
   cache: { enabled: false };
 }
@@ -79,6 +81,7 @@ export function parseConfig(value: unknown): Config {
     "enabled",
     "level",
     "includeCommands",
+    "file",
   ]);
   const cache = section(root.cache, ["enabled"]);
   const mode = root.mode ?? "balanced";
@@ -91,6 +94,13 @@ export function parseConfig(value: unknown): Config {
   const level = logging.level ?? "info";
   if (level !== "info" && level !== "error")
     throw new Error("Invalid log level");
+  if (
+    logging.file !== undefined &&
+    (typeof logging.file !== "string" ||
+      !logging.file.startsWith("/") ||
+      logging.file.includes("\0"))
+  )
+    throw new Error("Invalid audit file");
   return {
     enabled: bool(root.enabled, true),
     model: {
@@ -109,6 +119,7 @@ export function parseConfig(value: unknown): Config {
       enabled: bool(logging.enabled, true),
       level,
       includeCommands: false,
+      file: (logging.file as string | undefined) ?? defaultAuditPath(),
     },
     cache: { enabled: false },
   };
