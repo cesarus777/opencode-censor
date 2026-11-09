@@ -2,8 +2,8 @@
 
 - [x] Reproduce the 0.3.0 staging test failure on a single CPU and replace fixed startup sleeps with explicit reviewer readiness.
 - [x] Validate the retry archive and native probe locally: 202 tests, 30 single-CPU adapter repetitions, 74 archive files, isolated imports and the installed native probe.
-- [ ] Commit and deploy v0.3.1, then verify remote staging.
-- [ ] Verify successful remote npm staging.
+- [x] Commit and deploy v0.3.1 (`d2ba5e2`); release main/tag CI passed.
+- [x] Verify successful remote npm staging: run 42654799430 passed, including the npm trusted-publishing step. Public latest remains 0.2.0 until maintainer approval.
 - [ ] Maintainer approves the staged package with npm 2FA and public availability is confirmed.
 
 The failed `v0.3.0` tag remains unchanged. Its main/tag CI passed, but staging

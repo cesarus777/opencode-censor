@@ -1,3 +1,20 @@
+# Version 0.3.1 remote staging outcome — 2026-11-09
+
+Retry commit `d2ba5e2` and annotated tag `v0.3.1` were pushed.
+[Stage run 42654799430](https://github.com/cesarus777/opencode-censor/actions/runs/42654799430)
+succeeded. Job step metadata confirms successful package validation, installed-package
+native smoke, final archive inspection/installation, and staging the verified archive
+through npm trusted publishing. Both
+[main CI](https://github.com/cesarus777/opencode-censor/actions/runs/42654798107) and
+[tag CI](https://github.com/cesarus777/opencode-censor/actions/runs/42654799652) passed
+for the release commit. The initial failed `v0.3.0` tag remains unchanged.
+
+After successful staging, npm still reported public version/latest 0.2.0.
+**Version 0.3.1 is staged for maintainer 2FA approval and is not yet confirmed
+public.** The configured staging workflow does not bypass that approval step.
+Remote-provider, interactive-client and private reporting acceptance remain
+outstanding; the controlled native probe never executes reviewed strings.
+
 # Version 0.3.1 release retry — 2026-11-09
 
 Commit `eda9919` and annotated tag `v0.3.0` were pushed for the authorized release.
