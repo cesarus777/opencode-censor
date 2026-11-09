@@ -29,7 +29,7 @@ function host(overrides: Record<string, unknown> = {}) {
   };
   const ctx = {
     options,
-    location: { directory: "/workspace" },
+    location: { directory: process.cwd() },
     permission: { hook: register },
     tool: { hook: register },
     experimental: {
@@ -349,7 +349,7 @@ test("source mutation while model review is pending cannot reuse an allow", asyn
   await cleanup?.();
 });
 
-test("stateful adapter correlates source, enforces root workdir, and rechecks pending edits", async () => {
+test("stateful adapter correlates source, supports subdirectories, and rechecks pending edits", async () => {
   const root = await mkdtemp(join(tmpdir(), "censor-stateful-host-"));
   let finish: (() => void) | undefined;
   let started: (() => void) | undefined;
@@ -411,7 +411,7 @@ test("stateful adapter correlates source, enforces root workdir, and rechecks pe
     await mock.before("make check", "c1", "subdir");
     const subdir = event(["make check"]);
     await mock.emit("evaluate", subdir);
-    expect(subdir.effect).toBe("ask");
+    expect(subdir.effect).toBe("allow");
     const input = { command: "make check", workdir: "." };
     await mock.emit("execute.before", {
       tool: "shell",

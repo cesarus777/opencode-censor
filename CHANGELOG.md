@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 — development workflow (2026-11-09)
+
+- Add explicit hybrid review: stateless inspection and opt-in project evidence review, without alternate-path retries.
+- Reject native home-relative workdirs before review, including projects with literal `~/app` directories, to prevent disagreement with OpenCode home expansion.
+- Validate project subdirectory workdirs and canonical directory identities; scope findings by command and workdir.
+- Queue concurrent project reviews FIFO with bounded admission, total deadlines and retained capacity for unsettled work.
+- Add review-path/queue-wait audit reporting and an original OpenCode 2.2.5 scanner probe that prevents process creation.
+
 ## 0.2.0 — stateful review and provider checks (2026-11-08)
 
 - Add an opt-in native free-provider integration check with explicit zero-price model validation and a manual CI workflow. Real-provider acceptance remains incomplete: the tested reviewer returned safe `review_error` fallback.

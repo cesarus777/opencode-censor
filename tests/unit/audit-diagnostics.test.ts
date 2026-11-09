@@ -186,3 +186,15 @@ test("invalid configuration has explicit unknown settings and no command", async
   expect(JSON.stringify(records)).not.toContain("PRIVATE");
   gate.close();
 });
+
+test("audit includes fixed path and queue duration alongside snapshot call counts", async () => {
+  const engine = new ReviewEngine(config(), { generate: async () => allowed });
+  const value = record(await engine.review(input));
+  expect(value).toMatchObject({
+    reviewPath: "inspection",
+    queueWaitMs: 0,
+    reviewCalls: 1,
+    strategy: "unknown",
+  });
+  engine.close();
+});

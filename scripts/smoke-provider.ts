@@ -1,6 +1,7 @@
 // Controlled loopback OpenAI-compatible provider. Synthetic input only.
 export function localProvider() {
   let mode = "allow";
+  let toolInput: { command: string; workdir?: string } | undefined;
   const records: Record<string, unknown>[] = [];
   const server = Bun.serve({
     hostname: "127.0.0.1",
@@ -108,6 +109,7 @@ export function localProvider() {
           name: "shell",
           arguments: JSON.stringify({
             command,
+            ...toolInput,
             description: "Inert native smoke",
           }),
         },
@@ -162,6 +164,9 @@ export function localProvider() {
   return {
     url: `http://127.0.0.1:${server.port}/v1`,
     records,
+    setToolInput(value: { command: string; workdir?: string }) {
+      toolInput = value;
+    },
     setMode(value: string) {
       mode = value;
     },

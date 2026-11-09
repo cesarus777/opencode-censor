@@ -18,7 +18,8 @@ export type SourceDetail =
   | "invalid_command"
   | "invalid_workdir"
   | "external_workdir"
-  | "stateful_workdir_mismatch";
+  | "stateful_workdir_mismatch"
+  | "workdir_changed";
 
 // Local reason codes only; never derive diagnostics from exception/provider text.
 export function decisionStage(code: string): AuditStage {
@@ -26,7 +27,15 @@ export function decisionStage(code: string): AuditStage {
   if (code === "missing_full_command" || code === "gate_error") return "source";
   if (code === "input_changed" || code === "project_changed") return "recheck";
   if (["unloaded", "cancelled", "timeout"].includes(code)) return "lifecycle";
-  if (["review_capacity", "stateful_busy"].includes(code)) return "admission";
+  if (
+    [
+      "review_capacity",
+      "stateful_busy",
+      "review_queue_full",
+      "session_queue_full",
+    ].includes(code)
+  )
+    return "admission";
   if (
     code.startsWith("evidence_") ||
     ["project_incomplete", "invalid_evidence_reference"].includes(code)

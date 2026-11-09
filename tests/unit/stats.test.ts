@@ -73,3 +73,47 @@ test("statistics reject invalid call counts and do not echo arbitrary text or pr
   expect(Object.entries(result.reasons)).toEqual([["constructor", 1]]);
   expect(result.details).toEqual({ unknown: 1 });
 });
+
+test("statistics report selected paths and queue waits without exposing commands", () => {
+  const summary = summarizeAudit(
+    [
+      {
+        action: "shell",
+        decision: "allow",
+        reviewPath: "inspection",
+        queueWaitMs: 0,
+      },
+      {
+        action: "shell",
+        decision: "ask",
+        reviewPath: "project",
+        queueWaitMs: 12,
+      },
+      {
+        action: "shell",
+        decision: "ask",
+        reviewPath: "project",
+        queueWaitMs: 7,
+      },
+      { action: "shell", decision: "ask" },
+    ]
+      .map((record) => JSON.stringify(record))
+      .join("\n"),
+  );
+  expect(summary.reviewPaths).toEqual({
+    inspection: 1,
+    project: 2,
+    unknown: 1,
+  });
+  expect(summary).toMatchObject({
+    queued: 2,
+    totalQueueWaitMs: 19,
+    maxQueueWaitMs: 12,
+  });
+  for (const queueWaitMs of [-1, 0.5, "1", null])
+    expect(() =>
+      summarizeAudit(
+        JSON.stringify({ action: "shell", decision: "ask", queueWaitMs }),
+      ),
+    ).toThrow();
+});

@@ -509,7 +509,7 @@ test("audit contains only fixed diagnostics and counts", async () => {
   expect(record).not.toContain("rule inspect");
 });
 
-test("same-session concurrency asks, unload settles, late replies never update findings", async () => {
+test("same-session concurrency waits, unload settles, late replies never update findings", async () => {
   let finish!: (text: string) => void;
   let started!: () => void;
   const ready = new Promise<void>((resolve) => {
@@ -529,8 +529,9 @@ test("same-session concurrency asks, unload settles, late replies never update f
   );
   const pending = f.review();
   await ready;
-  expect((await f.review()).code).toBe("stateful_busy");
+  const queued = f.review();
   f.engine.close();
+  expect((await queued).code).toBe("unloaded");
   expect((await pending).code).toBe("unloaded");
   finish(JSON.stringify(decide()));
   await Bun.sleep(2);
@@ -681,10 +682,12 @@ test("capacity bounds the whole evidence loop and provider failures retain call 
     ),
   );
   expect(
-    outcomes.filter((outcome) => outcome.code === "review_capacity"),
+    outcomes.filter(
+      (outcome) => outcome.code === "timeout" && outcome.reviewCalls === 0,
+    ),
   ).toHaveLength(2);
   expect((await engine.review(input(), undefined, "extra")).code).toBe(
-    "review_capacity",
+    "timeout",
   );
   const failed = await fixture(
     {},

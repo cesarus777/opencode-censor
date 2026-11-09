@@ -2,6 +2,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { OpenCode } from "@opencode/client";
 import { installedPackage } from "./package-check.js";
+import { scannerFixtures } from "../tests/fixtures/scanner.js";
 import { localProvider } from "./smoke-provider.js";
 
 const binary = process.env.OPENCODE_BIN;
@@ -354,14 +355,101 @@ try {
     )
       throw new Error("Generic project ask became allow");
   }
+  // Original scanner phase. The pinned host's Shell.create awaits preparation
+  // (scanner + permission.assert) before invoking spawner.spawn. The driver keeps
+  // the original tool and forces native deny after recording our gate's effect.
+  await mkdir(resolve(project, "packages/app"), { recursive: true });
+  delete configuration.plugins[0].options.review;
+  const scannerAudit = resolve(temporary, "scanner-audit.jsonl");
+  configuration.plugins[0].options.logging = {
+    enabled: true,
+    includeCommands: false,
+    file: scannerAudit,
+  };
+  configuration.plugins[1].options.originalScanner = true;
+  configuration.plugins[1].options.scannerCommands = scannerFixtures.map(
+    (fixture) => fixture.command,
+  );
+  await writeFile(
+    resolve(project, "opencode.json"),
+    JSON.stringify(configuration),
+  );
+  await client.location.reload(request());
+  for (const fixture of scannerFixtures) {
+    provider.setToolInput(fixture);
+    const before = await reviewCount();
+    const id = await probe("allow");
+    const completed = await waitRecord("tool-completed", id);
+    if (completed.status !== "error")
+      throw new Error("Original scanner interception failed to stop the tool");
+    const all = await records();
+    const evaluated = all.find(
+      (record) => record.type === "evaluated" && record.sessionID === id,
+    );
+    const source = all.find(
+      (record) => record.type === "source" && record.sessionID === id,
+    );
+    const nativeSource = evaluated?.source as
+      | Record<string, unknown>
+      | undefined;
+    if (
+      !evaluated ||
+      !source ||
+      nativeSource?.messageID !== source.messageID ||
+      nativeSource?.id !== source.id
+    )
+      throw new Error("Original scanner source correlation mismatch");
+    if (evaluated.effect !== (fixture.inspection ? "allow" : "ask"))
+      throw new Error(
+        "Original scanner inspection path mismatch: " +
+          JSON.stringify({ fixture, evaluated }),
+      );
+    if ((await reviewCount()) - before !== (fixture.inspection ? 1 : 0))
+      throw new Error("Original scanner reviewer admission mismatch");
+    if (
+      all.some(
+        (record) => record.type === "inert-allowed" && record.sessionID === id,
+      )
+    )
+      throw new Error("Original scanner tool was replaced");
+    const auditRecord = (await readFile(scannerAudit, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as Record<string, unknown>)
+      .find((record) => record.sessionID === id);
+    if (
+      auditRecord?.detailCode !==
+      (fixture.inspection
+        ? "review_allowed"
+        : Array.isArray(evaluated.resources) && evaluated.resources.length > 1
+          ? "multiple_resources"
+          : "command_outside_grammar")
+    )
+      throw new Error("Original scanner audit diagnostic mismatch");
+    console.log(
+      "Scanner fixture: " +
+        JSON.stringify({
+          ...fixture,
+          resources: evaluated.resources,
+          message: evaluated.message,
+          detailCode: auditRecord.detailCode,
+        }),
+    );
+  }
+  if (
+    (await records()).filter(
+      (record) => record.type === "original-shell-prepare",
+    ).length !== scannerFixtures.length
+  )
+    throw new Error("Original scanner preparation count mismatch");
   const cancellation = (await records()).filter(
     (r) => r.type === "provider-abort",
   ).length;
   console.log(
-    `PASS: installed archive in OpenCode 2.2.5; native source hooks; allow/ask/error/explicit deny; tool completion; timeout and late reply; 10 concurrent requests / 8 admitted; reload cleanup; generic evidence loop allow/ask/missing-file fallback. Provider abort observations: ${cancellation}.`,
+    `PASS: installed archive in OpenCode 2.2.5; native source hooks; allow/ask/error/explicit deny; tool completion; timeout and late reply; 10 concurrent requests / 8 admitted; reload cleanup; generic evidence loop allow/ask/missing-file fallback; 13 original-scanner fixtures blocked before process creation. Provider abort observations: ${cancellation}.`,
   );
   console.log(
-    "Scope: controlled loopback HTTP provider and inert replacement shell; no reviewed command executed, real scanner/remote reviewer/interactive UI acceptance remains separate.",
+    "Scope: controlled loopback HTTP provider; inert replacement shell plus original-scanner phase with forced native deny before process creation. No reviewed command executed. Remote reviewer and interactive UI acceptance remain separate.",
   );
 } finally {
   provider.stop();

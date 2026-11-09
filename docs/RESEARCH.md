@@ -40,7 +40,7 @@ The credential-free native harness installs the npm archive outside the checkout
 
 An attempted replacement through the declared `aisdk.hook("language")` did not intercept the native OpenAI transport. Its synthetic key was rejected by OpenAI before any tool ran. Do not assume AI SDK hooks replace native provider implementations in this host. The final harness uses a custom compatible provider with an explicit loopback base URL instead.
 
-The driver uses `tool.transform` to replace the built-in shell implementation with `permission.assert`, supplying the native tool context's session/message/call identifiers. Actual `execute.before` and `execute.after` hooks still run. A `shell.create.before` guard rejects any attempt to create a shell if substitution fails. This tests real host source correlation, permission effects, pending requests and hook lifecycle, but does not prove the original scanner or executor uses the same source shape. That remains a manual deployment acceptance check. Completed-call source removal is verified in deterministic adapter tests; a repeated assertion within a native completion hook did not emit a fresh evaluation and is not used as evidence for that property.
+The driver uses `tool.transform` to replace the built-in shell implementation with `permission.assert`, supplying the native tool context's session/message/call identifiers. Actual `execute.before` and `execute.after` hooks still run. A `shell.create.before` guard rejects any attempt to create a shell if substitution fails. This tests real host source correlation, permission effects, pending requests and hook lifecycle, but does not prove the original scanner or executor uses the same source shape. A separate original-scanner phase was added on 2026-11-09, with its verified pre-spawn interception described below. Completed-call source removal is verified in deterministic adapter tests; a repeated assertion within a native completion hook did not emit a fresh evaluation and is not used as evidence for that property.
 
 Host startup requires temporary HTTP Basic authentication in this environment. The smoke sets a fresh per-run password and supplies it only to its local client. It does not inherit account credentials. Project probing remains inside an ignored temporary directory beneath the checkout: an initial probe in an unrelated `/tmp` project returned an empty plugin list. Do not infer plugin loading merely from successful server startup.
 
@@ -61,7 +61,7 @@ agent is created. Native SDK declarations and dependency versions are unchanged.
 
 The injectable evidence source provides bounded Node filesystem reads, directory
 listings and recursive literal searches. The adapter supplies the project root
-and session ID locally; session IDs never reach prompts or audit. State includes
+and session ID locally; session IDs never reach prompts; audit includes session IDs. State includes
 bounded evidence fingerprints and fixed findings, not persisted file content or
 approvals. Findings are exposed only after matching evidence is freshly acquired.
 
@@ -95,3 +95,95 @@ HOME/XDG paths and synthetic fixtures. Only one eligible stateless review is
 submitted; host-internal retries remain possible. Provider errors and conservative
 asks are reported as incomplete acceptance, without exposing provider responses
 or host diagnostics. Remote stateful and original-scanner acceptance are deferred.
+
+## Original 2.2.5 scanner and pre-spawn interception — 2026-11-09
+
+Inspected the installed 2.2.5 SDK declarations and the JavaScript embedded in the
+actual Linux x64 CLI at `/tmp/permission-gate-host/node_modules/@opencode/cli-linux-x64/bin/opencode`.
+The local binary reports 2.2.5. The observations below refer to this pinned artifact,
+not moving upstream source or the mocked host.
+
+The native shell input schema includes `command`, optional `workdir`, `timeout`
+and `background`. `ShellTool.Plugin` calls `Shell.create` with the command and
+workdir plus a preparation callback. The observed order is:
+
+1. `tool.execute.before` observes native input and session/message/call IDs.
+2. `Shell.create` builds shell input and triggers `shell.create.before`.
+3. Its preparation callback (`ShellTool.prepare`) resolves cwd, invokes the portable
+   scanner, authorizes external directories, and awaits shell `permission.assert`.
+4. Permission evaluation receives resources from `scan.commands[].resource` and
+   `{type: "tool", messageID: context.messageID, id: context.id}` with session ID.
+5. Only after preparation succeeds does `Shell.create` enter its scoped work and
+   call `spawner.spawn`. The native assertion rejects a deny effect before that point.
+
+The hook dispatcher awaits callbacks in registration order and returns the mutable
+event. A `shell.create.before` hook that always throws stops before the scanner,
+so the old guard by itself establishes no original-scanner compatibility.
+
+The new phase of `scripts/live-smoke.ts` loads the installed archive, preserves the
+original shell implementation and scanner, and registers a test-only final
+permission hook. It records the censor's decision, then forces native deny for all
+permission actions. Its shell creation hook permits preparation only for the fixed
+scanner fixtures; unexpected commands stop immediately. All fixtures contain an
+ordinary scanner-visible command and reach the shell assertion. No permission
+reply is sent, and no reviewed source reaches process creation. This is an explicit
+supported permission interception point, not a shell executor or a reconstructed scanner.
+
+Observed resources are exact command strings for `ls`, `ls -la`, `ls -lah`,
+`git status`, `git status --short`, and `git status --porcelain`, including native
+workdirs `packages/app`. They correlate with the observed native source IDs and
+reach the existing stateless reviewer. Unsupported `ls .`, `ls --recursive` and
+`git status --branch` produce `command_outside_grammar`; compounds and pipelines
+produce resources `["ls", "git status"]` and `multiple_resources`. Exact inspections
+receive `review_allowed` with the deterministic loopback allow response. No adapter
+mismatch or scanner-matching relaxation was required. These diagnostics explain
+this probe's prompts; they cannot establish why an unrelated deployment prompts
+without its own version 2 detail codes.
+
+The scanner also derives permission-save patterns independently of resources and
+handles directory-changing commands specially. Neither is treated as complete
+source. Existing strict equality and source expiry/mutation checks remain intact.
+Tests never execute scanner fixtures. Remote-provider and interactive approval
+acceptance remain separate from these controlled-provider observations.
+
+## Workflow contracts
+
+Hybrid uses the existing stateless generation protocol for eligible inspections,
+without evidence acquisition. It uses the stateful protocol for other eligible
+commands and never retries an inspection decision through the project path.
+Both paths preserve independently configured restrictions; hybrid inspection
+conservatively treats every candidate as potentially reading the workspace and
+executing a process for `forbiddenEffects`. Explicit stateful behavior and the
+default stateless strategy remain distinct.
+
+Source snapshots retain the complete command and native workdir, with exact field
+rechecks after waiting and before allow. Filesystem validation uses canonical root
+containment, rejects workdir symlink components, and compares device/inode identities
+for the root and every workdir component. The native workdir is normalized into a
+project-relative prompt field; evidence paths remain root-relative. Filesystem
+checks cannot close the final check/run race. Findings and discovery hints include
+workdir identity so they cannot cross directories without fresh investigation.
+
+The local engine schedules at most eight active or still-unsettled tasks, with
+FIFO project waiters (32 global/eight per session). Admission skips busy sessions
+without skipping older work within that session. The deadline begins at gate entry;
+queued expiry makes zero generation calls. A task retains its active slot/session
+lock until underlying source/context/evidence/generation/recheck work settles,
+even after timeout. This requires no new SDK methods or cancellation guarantees.
+
+## Native home-relative workdirs — 2026-11-09
+
+Reinspected `FileAccess.resolve` in the actual pinned Linux x64 2.2.5 binary.
+Its shared path helper passes `~` as the host home and joins leading `~/` paths
+onto that home before resolving against the project. `windowsPath` is an identity
+function in this artifact. Node `path.resolve(project, "~/app")` instead resolves
+a literal `~` project directory and therefore cannot establish the native location.
+
+The plugin now rejects exact `~` and leading `~/` in captured native workdir fields
+before resolving directories, acquiring evidence or generating a prompt. It does
+not read or transmit the home directory to emulate expansion. Ordinary absolute
+and explicit relative paths retain containment and identity checks. `./~/app` is
+an explicit literal project path in this host and is covered separately. Input
+mutation to a home-relative workdir while review is pending also prevents allow.
+Regression fixtures create literal project `~/app` directories without executing
+reviewed strings and cover stateless, stateful and hybrid decisions.

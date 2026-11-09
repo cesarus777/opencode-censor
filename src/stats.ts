@@ -7,6 +7,10 @@ export interface AuditSummary extends Counts {
   reviewerReached: number;
   reviewerSkipped: number;
   reviewerUnknown: number;
+  reviewPaths: Record<string, number>;
+  queued: number;
+  totalQueueWaitMs: number;
+  maxQueueWaitMs: number;
   reasons: Record<string, number>;
   details: Record<string, number>;
 }
@@ -18,6 +22,10 @@ export function summarizeAudit(text: string): AuditSummary {
     reviewerReached: 0,
     reviewerSkipped: 0,
     reviewerUnknown: 0,
+    reviewPaths: {},
+    queued: 0,
+    totalQueueWaitMs: 0,
+    maxQueueWaitMs: 0,
     reasons: {},
     details: {},
   };
@@ -65,6 +73,27 @@ export function summarizeAudit(text: string): AuditSummary {
     ) {
       counts.reviewerReached++;
     } else counts.reviewerUnknown++;
+    increment(
+      counts.reviewPaths,
+      "reviewPath" in value &&
+        (value.reviewPath === "inspection" || value.reviewPath === "project")
+        ? value.reviewPath
+        : undefined,
+    );
+    if ("queueWaitMs" in value) {
+      if (
+        typeof value.queueWaitMs !== "number" ||
+        !Number.isSafeInteger(value.queueWaitMs) ||
+        value.queueWaitMs < 0
+      )
+        throw new Error("Audit file contains an invalid queue duration");
+      if (value.queueWaitMs > 0) counts.queued++;
+      counts.totalQueueWaitMs += value.queueWaitMs;
+      counts.maxQueueWaitMs = Math.max(
+        counts.maxQueueWaitMs,
+        value.queueWaitMs,
+      );
+    }
     increment(counts.reasons, "reason" in value ? value.reason : undefined);
     increment(
       counts.details,
@@ -109,7 +138,11 @@ if (
     console.log(
       `Reached reviewer: ${reviewerReached} / ${known} known (${known ? ((reviewerReached / known) * 100).toFixed(1) : "0.0"}%); unknown: ${reviewerUnknown}`,
     );
+    console.log(
+      `Queue waits: ${summary.queued}; total ${summary.totalQueueWaitMs} ms; maximum ${summary.maxQueueWaitMs} ms`,
+    );
     for (const [label, counts] of [
+      ["Review paths", summary.reviewPaths],
       ["Reasons", summary.reasons],
       ["Details", summary.details],
     ] as const) {

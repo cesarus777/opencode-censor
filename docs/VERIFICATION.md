@@ -1,3 +1,86 @@
+# Version 0.3.0 release preflight — 2026-11-09
+
+The operator authorized resolving the home-workdir review finding, updating
+release documentation, staging and committing the implementation, and running
+release deployment. Version 0.3.0 includes hybrid routing, project-local workdirs,
+bounded review queues and audit diagnostics from the development workflow work.
+
+The home-expansion finding is fixed by rejecting native `~` and `~/…` workdirs
+before directory resolution, evidence acquisition or generation. Tests create a
+literal project `~/app` directory and cover stateless, stateful and hybrid review,
+explicit relative literal paths, and workdir mutation while review is pending.
+The actual pinned 2.2.5 `FileAccess.resolve` implementation was reinspected; see
+[the research note](RESEARCH.md#native-home-relative-workdirs--2026-11-09).
+
+Registry preflight confirms public package version/latest 0.2.0 and maintainer
+`cesarus777`. Version 0.3.0 is prepared for the existing tag-triggered **Stage on
+npm** workflow, which requires maintainer 2FA approval before publication. Release
+validation passed with Bun 1.3.11 and Node 26.11.1: frozen installation,
+typecheck, formatting, 202 tests (634 assertions), and build. Sandboxed npm pack
+returned no report; the separately escalated package check passed inspection of
+74 archive files, isolated installation with lifecycle scripts disabled, Bun/Node
+ESM imports and the installed statistics CLI. The installed-package native probe
+passed with the controlled loopback provider, generic evidence review and all 13
+original-scanner fixtures intercepted before process creation. Provider abort
+observations were zero; no reviewed command was executed. Remote release staging
+will be recorded after completion.
+Dependencies are unchanged; the previously accepted transitive dependency
+advisories remain documented. Remote-provider, interactive-client and private
+reporting acceptance remain outstanding. The unrelated screenshot and local audit
+file are excluded from staging and release artifacts.
+
+# Development workflow — 2026-11-09
+
+Implemented locally; no publication, push, tag or release was performed. The default
+strategy remains stateless. Hybrid requires explicit file-disclosure consent.
+Development configuration is in `examples/opencode-development.jsonc`.
+
+Environment: Bun 1.3.11 (explicit runtime path; system Bun 1.1.34 was not used),
+Node 26.11.1, pinned OpenCode/SDK 2.2.5. Frozen installation passed with no dependency
+changes. Typecheck, formatting, all 199 deterministic tests (599 assertions) and
+build passed. The combined check stopped at sandboxed npm pack, which returned no
+report. The separately escalated package check passed: 74 archive files inspected,
+isolated installation with lifecycle scripts disabled, and public ESM imports in
+Bun and Node. The final native rerun also required escalation after the sandbox
+prevented the host version preflight; that restricted attempt is not a pass.
+
+Deterministic tests cover routing without alternate-path retry, restrictive hybrid
+settings, disclosure consent, workdir canonical containment and symlink rejection,
+changed native inputs/resources/identifiers while queued and reviewing, directory
+replacement, workdir-scoped findings, FIFO progress across sessions, global/session
+queue overflow, entry deadlines, zero-generation expiry, hung evidence/provider
+capacity retention, unload and late settlement. Reviewed strings remain inert.
+
+The installed-archive native probe passed with a controlled loopback HTTP provider.
+The main phase retains the inert replacement shell and checks source hooks,
+allow/ask/error/hard deny, timeout/late replies, active capacity and lifecycle,
+plus the generic evidence loop. A separate phase preserves the original native
+shell implementation and scanner, then forces native deny in a final permission
+evaluation hook. Inspection of the actual 2.2.5 binary confirms that this assertion
+must succeed before `Shell.create` enters `spawner.spawn`. No reviewed command was
+executed and no pending permission was answered.
+
+All 13 original-scanner fixtures passed: exact `ls`/`git status`, supported flags,
+unsupported arguments, compounds, pipelines and `packages/app` workdirs. Source IDs
+matched the native tool hook. Exact eligible inspections used one reviewer call;
+unsupported arguments yielded `command_outside_grammar`, and compounds/pipelines
+yielded `multiple_resources` with zero calls. No scanner adapter mismatch was found.
+Provider abort observations remained zero; cancellation/cost limits are unchanged.
+
+| Acceptance category                           | Status and scope                                                                    |
+| --------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Deterministic unit/security/mock host         | Passed: 199 tests / 599 assertions.                                                 |
+| Archive / isolated install / Bun and Node ESM | Passed: 74 archive files inspected, isolated installation and both runtime imports. |
+| Original OpenCode 2.2.5 scanner               | Passed with native deny preventing process creation; no real shell execution.       |
+| Controlled local reviewer provider            | Passed through native HTTP generation with synthetic credentials.                   |
+| Remote provider / stateful real reviewer      | Not run for this change; earlier safe provider failures are not acceptance.         |
+| Interactive client approval / real execution  | Not run; remains a separate deployment check.                                       |
+| Remote CI                                     | Not run.                                                                            |
+
+The following records describe earlier versions and their historical acceptance
+scope; the original-scanner result above supersedes their deferred-scanner status
+for the pinned local fixture set only.
+
 # Development workflow plan documentation — 2026-11-09
 
 Added `docs/DEVELOPMENT-WORKFLOW-PLAN.md` and a README link. The plan covers

@@ -8,6 +8,8 @@ export type ReviewDecision = {
   confidence?: number;
 };
 export type Outcome = ReviewDecision & {
+  reviewPath?: "inspection" | "project";
+  queueWaitMs?: number;
   stage?: AuditStage;
   detailCode?: string;
   reviewerConfidence?: number;
@@ -27,7 +29,12 @@ export interface PermissionEvent {
   effect: "allow" | "ask" | "deny";
   message?: string;
 }
+export interface SourceSnapshot {
+  command: string;
+  workdir?: string;
+}
 export interface ReviewInput {
+  workdir?: string;
   resources: readonly string[];
   command: string;
   context: readonly string[];

@@ -1,0 +1,40 @@
+// Local development build: explicitly opt into hybrid review.
+// Project file disclosure goes to the independently selected reviewer provider.
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    {
+      "package": "/absolute/path/to/opencode-censor",
+      "options": {
+        "model": { "providerID": "anthropic", "id": "MODEL_ID" },
+        "mode": "balanced",
+        "logging": { "includeCommands": false },
+        "systemPrompt": "Investigate relevant project files and dependencies. Ask when effects are unclear.",
+        "review": {
+          "strategy": "hybrid",
+          "maxModelCalls": 4,
+          "allowShellSyntax": false,
+          "alwaysAsk": [],
+          "forbiddenEffects": [
+            "network",
+            "privilege",
+            "destructive",
+            "outside_project",
+            "unknown",
+          ],
+          "project": {
+            // Enables disclosure of requested files under the permitted prefixes.
+            "allowFileContents": true,
+            "allowedPaths": ["."],
+            "excludedPaths": ["private", "artifacts"],
+            "maxFileBytes": 16384,
+            "maxTotalBytes": 65536,
+            "maxFiles": 16,
+            "maxDirectoryEntries": 128,
+          },
+        },
+      },
+    },
+  ],
+  "permissions": [{ "action": "shell", "resource": "*", "effect": "ask" }],
+}

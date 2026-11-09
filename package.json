@@ -1,6 +1,6 @@
 {
   "name": "@cesarus777/opencode-censor",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Fail-safe native OpenCode V2 shell permission reviews using an independent model",
   "license": "MIT",
   "publishConfig": {

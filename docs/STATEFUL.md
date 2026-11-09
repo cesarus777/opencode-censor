@@ -55,7 +55,7 @@ execution tool, MCP server or provider-side persistent conversation.
 
 ```mermaid
 flowchart TD
-  C[Correlated complete command and root workdir] --> P[Local command and disclosure policy]
+  C[Correlated complete command and project-local workdir] --> P[Local command and disclosure policy]
   P --> O[Bounded root directory overview]
   O --> M[Reviewer model]
   M -->|read, list, search| F[Validate scope and gather bounded evidence]
@@ -80,7 +80,7 @@ all relevant files. A malicious or mistaken model can still approve a harmful co
 
 | Option                               | Default     | Contract                                                        |
 | ------------------------------------ | ----------- | --------------------------------------------------------------- |
-| `review.strategy`                    | `stateless` | `stateless` inspection or opt-in `stateful` review              |
+| `review.strategy`                    | `stateless` | `stateless`, `stateful`, or opt-in `hybrid` routing             |
 | `review.maxModelCalls`               | `4`         | Total model calls per evaluation, 1–8, including final decision |
 | `review.allowShellSyntax`            | `false`     | Permit raw shell syntax to reach model review                   |
 | `review.alwaysAsk`                   | `[]`        | Case-sensitive literal command substrings that force ask        |
@@ -92,6 +92,19 @@ all relevant files. A malicious or mistaken model can still approve a harmful co
 | `review.project.maxTotalBytes`       | `65536`     | Aggregate unique file bytes, 1–262144                           |
 | `review.project.maxFiles`            | `16`        | Unique files and, separately, directories, each limited to 1–32 |
 | `review.project.maxDirectoryEntries` | `128`       | Total entries examined across unique directories, 1–512         |
+
+Choosing `hybrid` requires the same disclosure consent. Eligible inspections with
+one matching complete source/resource use the stateless reviewer without acquiring
+project evidence. Its prompt includes command, matching resources, relative workdir
+and optional fixed intent labels. Other eligible commands use this evidence protocol. Inspection
+ask/error/malformed response/timeout never retries through project review.
+`alwaysAsk` applies to both hybrid paths. Forbidding `workspace_read` or
+`process_execution` conservatively blocks every hybrid inspection locally, including
+`pwd`; no model declaration can override this check. Other forbidden effects retain
+the closed inspection grammar and its documented trusted-environment assumptions.
+Evidence path scopes apply to project acquisition; stateless inspection does not
+read project files through the plugin or inherit the full-file evidence requirement.
+See [the explicit development example](../examples/opencode-development.jsonc).
 
 Choosing `stateful` applies this protocol to every eligible shell request, including
 inspection commands; `stateless` retains the original inspection-only behavior.
@@ -124,16 +137,33 @@ fragments to 16384 characters and 32 scanner fragments at most. An empty
 resource list asks. Sensitive-data tripwires run before any command disclosure.
 `alwaysAsk` also applies to eligible inspection commands in stateful mode.
 
-The working directory must remain the project root in this version. Missing
-native source correlation asks. Scanner fragments can be multiple or different
+The native working directory may be the project root or a project subdirectory.
+The plugin resolves the canonical project root, rejects external locations, invalid
+directories and symlink components, and rechecks directory identity before allow.
+A symlinked project root is supported using its canonical identity. Native `~`
+and `~/…` workdirs ask before evidence acquisition: OpenCode expands these against
+the host home directory, while ordinary path resolution would treat them as
+literal project directory names. Use an explicit project-relative or absolute path. The reviewer
+receives the actual project-relative workdir (for example `packages/app`); all
+evidence paths, exclusions and allowed scopes remain project-root-relative.
+Embedded `cd` remains part of the command and follows shell-syntax policy.
+Missing native source correlation asks. Scanner fragments can be multiple or different
 from the complete command; the complete native input is always supplied and
 rechecked. The model never reconstructs a command from scanner fragments.
 
-`timeoutMs` covers context, overview, every evidence operation, model call and
-final recheck together. Eight unsettled reviews are admitted per plugin instance.
-Same-session project reviews overlap only by returning `stateful_busy`; no queue
-is added. A provider call or filesystem operation that ignores cancellation can
-retain capacity until it settles. No further model calls start after cancellation.
+`timeoutMs` starts at permission evaluation entry and covers source/directory
+validation, queue waiting, context, overview, evidence, generation and final checks.
+At most eight active or still-unsettled tasks are admitted per plugin instance.
+Project reviews wait FIFO per session, capped at 32 waiting requests globally and
+eight per session. Busy sessions do not block admissible work in other sessions.
+Queue overflow asks with `review_queue_full` or `session_queue_full`. Source and
+resources are revalidated before queued work starts. Expired waiters ask without
+starting generation and are removed immediately.
+
+A timed-out provider, context or filesystem operation retains its capacity slot
+and session lock until it settles, even after the permission result is ask.
+Late replies cannot allow or update findings; late rejections are handled. Unload
+settles waiters as ask and clears queues. No further model calls start after cancellation.
 
 ## Protocol and approval
 
@@ -187,18 +217,18 @@ filesystem work is bounded to an inspection pass and a verification pass.
 ## Session state and audit
 
 Memory retains up to eight structured findings per session: effect/risk/reason
-categories, a local complete-command hash, and evidence paths/fingerprints. Up to 32 sessions are retained, expiring
+categories, a local complete-command/workdir hash and the relative workdir, and evidence paths/fingerprints. Up to 32 sessions are retained, expiring
 five minutes from their first retained finding, checked on subsequent reviews.
 Provider prose, command history and file contents are not stored between reviews.
 Sessions are scoped to one project/plugin instance and its model/configuration.
 
-Previous file paths can guide discovery, but prior findings are withheld until
-the complete-command hash matches and all referenced evidence has been freshly
+Previous file paths can guide discovery within the same workdir, but prior findings are withheld until
+the complete-command/workdir hash matches and all referenced evidence has been freshly
 acquired and matches its fingerprints.
 Known changed evidence invalidates the associated findings. Every command still
 requires a fresh model decision. Unload clears all state; there is no approval cache.
 
-Audit adds `reviewCalls`, `evidenceCount`, and validated `reviewerReasonCode` to
+Audit adds selected `reviewPath` (`inspection` or `project`), `queueWaitMs`, `reviewCalls`, `evidenceCount`, and validated `reviewerReasonCode` to
 reviewer decision/risk metadata. Fixed local codes distinguish unavailable,
 sensitive or oversized evidence, no progress, call budgets, invalid references,
 changed evidence and policy escalation. Audit records include native session IDs and, by default, exact captured commands

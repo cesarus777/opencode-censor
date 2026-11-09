@@ -1,3 +1,16 @@
+# Version 0.3.0 acceptance supplement
+
+- [x] Reject native home-relative workdirs before review; cover literal `~/app` directories and pending workdir mutation.
+- [x] Retain hybrid routing, workdir containment, bounded FIFO queues and fixed audit diagnostics from the development workflow implementation.
+- [x] Confirm public npm package owner (`cesarus777`) and latest version (0.2.0) before staging 0.3.0.
+- [x] Complete final local package validation (202 tests; archive inspection and isolated Bun/Node imports) and installed-archive native probe for 0.3.0.
+- [ ] Commit and push the reviewed source, then trigger and verify tag-based npm staging.
+- [ ] Maintainer approves the staged package with npm 2FA and public 0.3.0 availability is confirmed.
+
+Remote-provider, interactive-client and private reporting acceptance remain
+outstanding as documented below. Original-scanner acceptance uses interception
+before process creation and does not execute reviewed strings.
+
 # Version 0.2.0 acceptance supplement
 
 This release includes opt-in generic stateful review, custom reviewer instructions
@@ -64,7 +77,7 @@ Run `OPENCODE_BIN=/absolute/path/to/opencode bun run test:live` after building. 
 
 ## Deployment acceptance with a human and real reviewers
 
-The inert tool replaces the native scanner/executor and the loopback provider replaces the remote service. Those substitutions leave the following checks mandatory on a trusted deployment host. Never add actual command execution to automated security tests.
+The main inert-tool phase replaces the native scanner/executor; a separate original-scanner phase now forces native deny after evaluation and before process creation. The loopback provider replaces the remote service. Deployment checks below remain distinct from this controlled acceptance. Never add actual command execution to automated security tests.
 
 - [ ] Connect the intended real reviewer through OpenCode using the operator's credentials; record provider/model identifiers and version without secrets. Use a model explicitly separate from the working agent selection.
 - [ ] With baseline shell ask and global auto-approve disabled, manually request exact `pwd`. Verify native built-in shell source/scanner compatibility, actual reviewer generation and execution without a prompt.

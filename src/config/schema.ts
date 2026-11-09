@@ -8,7 +8,7 @@ export interface Config {
   fallback: "ask";
   systemPrompt: string;
   review: {
-    strategy: "stateless" | "stateful";
+    strategy: "stateless" | "stateful" | "hybrid";
     maxModelCalls: number;
     allowShellSyntax: boolean;
     alwaysAsk: string[];
@@ -109,10 +109,14 @@ export function parseConfig(value: unknown): Config {
   ]);
   const strategy =
     review.strategy === undefined ? "stateless" : review.strategy;
-  if (strategy !== "stateless" && strategy !== "stateful")
+  if (
+    strategy !== "stateless" &&
+    strategy !== "stateful" &&
+    strategy !== "hybrid"
+  )
     throw new Error("Invalid strategy");
   const allowFileContents = bool(project.allowFileContents, false);
-  if (strategy === "stateful" && !allowFileContents)
+  if (strategy !== "stateless" && !allowFileContents)
     throw new Error("Project disclosure requires opt-in");
   const list = (value: unknown, defaults: string[]): string[] => {
     if (value === undefined) return defaults;

@@ -1,6 +1,11 @@
 # Development workflow implementation plan
 
-Status: planned, not implemented. Recorded 2026-11-09.
+Status: implemented for version 0.3.0 on 2026-11-09.
+Publication and staging status are recorded in verification.
+See [verification](VERIFICATION.md#development-workflow--2026-11-09) and the
+[scanner findings](RESEARCH.md#original-225-scanner-and-pre-spawn-interception--2026-11-09).
+Remote-provider and interactive-client acceptance remain open.
+The text below preserves the implementation requirements and original baseline.
 
 The intended workflow is semi-automated development: routine inspection should
 require little friction, project development commands should receive evidence-based

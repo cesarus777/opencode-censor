@@ -1,5 +1,4 @@
 import { Plugin } from "@opencode/plugin";
-import { resolve, relative, isAbsolute } from "node:path";
 import { object, parseConfig } from "./config/schema.js";
 import { fileAuditSink } from "./observability/file.js";
 import { ProjectEvidence } from "./core/project-review.js";
@@ -22,11 +21,9 @@ export default Plugin.define({
       { input: Record<string, unknown>; expires: number }
     >();
     const registrations: { dispose(): Promise<void> }[] = [];
-    let stateful = false;
     let log: ReturnType<typeof fileAuditSink> | undefined;
     try {
       const config = parseConfig(ctx.options);
-      stateful = config.review.strategy === "stateful";
       log = fileAuditSink(config.logging.file);
     } catch {
       // Invalid configuration is still audited to stderr by the gate.
@@ -34,6 +31,7 @@ export default Plugin.define({
     const gate = createGate({
       ...(log ? { log } : {}),
       options: ctx.options,
+      directory: ctx.location.directory,
       project: (config) =>
         new ProjectEvidence(ctx.location.directory, config.review.project),
       reviewer: (config) => nativeReviewer(ctx, config),
@@ -46,31 +44,13 @@ export default Plugin.define({
         if (!call) return { detailCode: "capture_missing" };
         if (call.expires < Date.now()) return { detailCode: "capture_expired" };
         const workdir = call.input.workdir;
-        if (workdir !== undefined) {
-          if (typeof workdir !== "string")
-            return { detailCode: "invalid_workdir" };
-          // Project snapshots are rooted at the project directory, so stateful
-          // review rejects a different working directory, including later edits.
-          if (
-            stateful &&
-            resolve(ctx.location.directory, workdir) !==
-              resolve(ctx.location.directory)
-          )
-            return { detailCode: "stateful_workdir_mismatch" };
-          const path = relative(
-            ctx.location.directory,
-            resolve(ctx.location.directory, workdir),
-          );
-          if (
-            path === ".." ||
-            path.startsWith("../") ||
-            path.startsWith("..\\") ||
-            isAbsolute(path)
-          )
-            return { detailCode: "external_workdir" };
-        }
+        if (workdir !== undefined && typeof workdir !== "string")
+          return { detailCode: "invalid_workdir" };
         return typeof call.input.command === "string"
-          ? call.input.command
+          ? {
+              command: call.input.command,
+              ...(workdir !== undefined ? { workdir } : {}),
+            }
           : { detailCode: "invalid_command" };
       },
       async context(sessionID, config) {

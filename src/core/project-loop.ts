@@ -20,6 +20,7 @@ import type {
 
 interface Finding {
   commandHash: string;
+  workdir: string;
   effects: ProjectDecision["effects"];
   riskLevel: ProjectDecision["riskLevel"];
   reasonCode: ProjectDecision["reasonCode"];
@@ -33,7 +34,7 @@ export function projectFailure(
   input: ReviewInput,
   config: Config,
 ): string | undefined {
-  if (config.review.strategy !== "stateful") return "stateful_disabled";
+  if (config.review.strategy === "stateless") return "stateful_disabled";
   if (!input.command.trim()) return "command_empty";
   if (input.command.length > 8192) return "command_too_long";
   if (input.resources.length === 0) return "resources_missing";
@@ -76,9 +77,10 @@ export class ProjectLoop {
     sessionID: string,
     signal: AbortSignal,
     onProgress?: (stage: "reviewer" | "evidence" | "recheck") => void,
+    withinDeadline: () => boolean = () => true,
   ): Promise<Outcome> {
     const commandHash = createHash("sha256")
-      .update(input.command)
+      .update(JSON.stringify([input.command, input.workdir ?? "."]))
       .digest("hex");
     const evidence = this.source.create(signal);
     const results: EvidenceResult[] = [];
@@ -89,7 +91,7 @@ export class ProjectLoop {
       reviewCalls: calls,
       evidenceCount: results.length,
     });
-    const current = () => !this.closed && !signal.aborted;
+    const current = () => !this.closed && !signal.aborted && withinDeadline();
     const now = Date.now();
     for (const [key, entry] of this.sessions)
       if (entry.expires <= now) this.sessions.delete(key);
@@ -97,13 +99,16 @@ export class ProjectLoop {
     // These are discovery hints, never previous decisions or authorization.
     const previousFiles = [
       ...new Set(
-        previous?.findings.flatMap((finding) =>
-          finding.stamps
-            .filter((stamp) => stamp.action === "read")
-            .map((stamp) => stamp.path),
-        ) ?? [],
+        previous?.findings
+          .filter((finding) => finding.workdir === (input.workdir ?? "."))
+          .flatMap((finding) =>
+            finding.stamps
+              .filter((stamp) => stamp.action === "read")
+              .map((stamp) => stamp.path),
+          ) ?? [],
       ),
     ].slice(0, 32);
+    if (!current()) return stop("cancelled");
     const overview = { action: "list", path: "." } as const;
     requests.add(JSON.stringify(overview));
     results.push(await evidence.request(overview));
@@ -214,6 +219,7 @@ export class ProjectLoop {
       ) {
         const finding: Finding = {
           commandHash,
+          workdir: input.workdir ?? ".",
           effects: response.effects,
           riskLevel: response.riskLevel,
           reasonCode: response.reasonCode,

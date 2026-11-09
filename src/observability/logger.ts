@@ -3,6 +3,8 @@ import { diagnostics, type AuditStage } from "./diagnostics.js";
 import type { Mode, Outcome } from "../types.js";
 
 export interface AuditRecord {
+  reviewPath?: Outcome["reviewPath"];
+  queueWaitMs?: number;
   schemaVersion: 2;
   strategy: Config["review"]["strategy"] | "unknown";
   mode: Mode | "unknown";
@@ -44,6 +46,10 @@ export function audit(
   // Serialize only explicit fields; never emit provider prose or error text.
   const record: AuditRecord = {
     schemaVersion: 2,
+    ...(outcome.reviewPath ? { reviewPath: outcome.reviewPath } : {}),
+    ...(outcome.queueWaitMs !== undefined
+      ? { queueWaitMs: Math.max(0, Math.round(outcome.queueWaitMs)) }
+      : {}),
     strategy: source?.strategy ?? "unknown",
     mode: source?.mode ?? "unknown",
     resourceCount: source?.resourceCount ?? null,
