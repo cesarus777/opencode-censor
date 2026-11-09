@@ -1,3 +1,59 @@
+# Development workflow plan documentation — 2026-11-09
+
+Added `docs/DEVELOPMENT-WORKFLOW-PLAN.md` and a README link. The plan covers
+original-scanner verification, explicit hybrid review, project subdirectory
+support and bounded review waiting, with security constraints and acceptance
+criteria. These features remain unimplemented. Formatting and diff checks passed;
+this documentation step did not change the previously tested audit implementation.
+The 173-test and package results below describe that implementation before the
+plan document was added. No native/provider checks, publication or push were
+performed during this documentation step.
+
+# Structured audit diagnostics — 2026-11-08
+
+Implemented audit schema version 2 with effective strategy/mode, initial scanner
+resource count, stage, specific local detail codes, validated confidence and an
+always-present generation-call count. Exact commands and native sessions remain
+as described below. Source, grammar, provider/context, evidence, admission and
+recheck failures are distinguishable without expanding approval eligibility.
+Call counts are snapshots at settlement, including failures and timeouts; late
+responses cannot alter records. Final input rechecks retain validated reviewer
+metadata while preserving the fail-safe ask decision.
+
+`censor-stats` now groups reasons/details and reports known reviewer reach,
+separately counting legacy unknowns. The existing 44-record audit file was read
+without modification: 44 policy asks and 44 records with unknown reach/details.
+New deterministic tests cover scanner/resource distinctions, native missing,
+expired and invalid captures/workdirs, context versus provider failure, timeout
+snapshots, confidence, recheck metadata retention, stateful diagnostics, malformed
+counts and mixed-version statistics. All command fixtures remain inert strings.
+
+Bun 1.3.11 frozen installation, typecheck, formatting, 173 tests (490 assertions)
+and build passed with Node 26.11.1. The sandboxed combined check failed only at
+package validation because npm produced no pack report. The separate package
+check outside the sandbox passed: 69 archive files inspected, isolated install
+with lifecycle scripts disabled, and Bun/Node ESM imports. Original native
+scanner, remote-provider and interactive-client acceptance were not run for this
+change. No publication, commit or remote push was performed.
+
+# Audit command and session diagnostics — 2026-11-08
+
+Audit records now include the native session ID and, by default, the exact captured
+shell command. `logging.includeCommands: false` omits command text; logging can
+still be disabled entirely. Missing complete source is never reconstructed from
+scanner fragments. Invalid configuration omits commands. This explicitly expands
+the audit privacy boundary: commands can contain credentials and private paths.
+Permission eligibility, reviewer disclosure and native deny handling are unchanged.
+
+Bun 1.3.11 frozen installation, typecheck, formatting, 159 deterministic tests
+(453 assertions) and build passed with Node 26.11.1. New tests cover exact
+multiline command round trips, explicit command omission and missing full source
+with session attribution. No reviewed command was executed. The sandboxed package
+check failed with no npm pack report; the outside-sandbox check passed archive
+inspection (65 files), isolated installation with lifecycle scripts disabled and
+Bun/Node ESM imports. Native scanner, remote provider and interactive client checks
+were not run for this change. No publication or remote push was performed.
+
 # Version 0.2.0 remote staging outcome — 2026-11-08
 
 Release commit `e6cf677` was pushed to `origin/main` and annotated tag `v0.2.0`

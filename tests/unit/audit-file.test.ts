@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { AuditRecord } from "../../src/observability/logger.js";
 import { fileAuditSink } from "../../src/observability/file.js";
 
 test("dedicated audit sink appends one private JSON line per decision", () => {
@@ -11,7 +12,14 @@ test("dedicated audit sink appends one private JSON line per decision", () => {
     "audit.jsonl",
   );
   const sink = fileAuditSink(path);
-  const record = {
+  const record: AuditRecord = {
+    schemaVersion: 2,
+    strategy: "stateless",
+    mode: "balanced",
+    stage: "reviewer",
+    detailCode: "review_allowed",
+    resourceCount: 1,
+    reviewCalls: 1,
     timestamp: "2026-11-07T00:00:00.000Z",
     action: "shell" as const,
     decision: "allow" as const,

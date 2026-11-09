@@ -713,3 +713,23 @@ test("file evidence can guide other commands but prior effects are command-speci
   expect(data(f.prompts.at(-2)!).previousFiles).toEqual(["build.ninja"]);
   expect(data(f.prompts.at(-1)!).verifiedFindings).toHaveLength(0);
 });
+
+test("stateful diagnostics preserve policy causes and validated confidence", async () => {
+  const f = await fixture({}, { alwaysAsk: ["blocked"] });
+  expect(await f.review("blocked")).toMatchObject({
+    code: "policy_requires_review",
+    detailCode: "always_ask_match",
+    stage: "policy",
+  });
+  expect(await f.review("ninja && pwd")).toMatchObject({
+    code: "policy_requires_review",
+    detailCode: "shell_syntax_disabled",
+    stage: "policy",
+  });
+  expect(await f.review()).toMatchObject({
+    decision: "allow",
+    reviewerConfidence: 0.99,
+    reviewCalls: 2,
+    detailCode: "project_review_allowed",
+  });
+});

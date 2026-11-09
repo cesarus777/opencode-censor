@@ -28,7 +28,7 @@ export interface Config {
   logging: {
     enabled: boolean;
     level: "info" | "error";
-    includeCommands: false;
+    includeCommands: boolean;
     file: string;
   };
   cache: { enabled: false };
@@ -194,7 +194,7 @@ export function parseConfig(value: unknown): Config {
     throw new Error("Invalid mode");
   if (root.fallback !== undefined && root.fallback !== "ask")
     throw new Error("Unsafe fallback");
-  if (bool(cache.enabled, false) || bool(logging.includeCommands, false))
+  if (bool(cache.enabled, false))
     throw new Error("Unsupported sensitive option");
   const level = logging.level ?? "info";
   if (level !== "info" && level !== "error")
@@ -240,7 +240,7 @@ export function parseConfig(value: unknown): Config {
     logging: {
       enabled: bool(logging.enabled, true),
       level,
-      includeCommands: false,
+      includeCommands: bool(logging.includeCommands, true),
       file: (logging.file as string | undefined) ?? defaultAuditPath(),
     },
     cache: { enabled: false },

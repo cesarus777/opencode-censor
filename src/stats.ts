@@ -3,8 +3,36 @@ import { readFileSync } from "node:fs";
 import { defaultAuditPath } from "./observability/path.js";
 
 type Counts = { total: number; allow: number; ask: number };
-export function countAudit(text: string): Counts {
-  const counts: Counts = { total: 0, allow: 0, ask: 0 };
+export interface AuditSummary extends Counts {
+  reviewerReached: number;
+  reviewerSkipped: number;
+  reviewerUnknown: number;
+  reasons: Record<string, number>;
+  details: Record<string, number>;
+}
+export function summarizeAudit(text: string): AuditSummary {
+  const counts: AuditSummary = {
+    total: 0,
+    allow: 0,
+    ask: 0,
+    reviewerReached: 0,
+    reviewerSkipped: 0,
+    reviewerUnknown: 0,
+    reasons: {},
+    details: {},
+  };
+  const increment = (map: Record<string, number>, value: unknown) => {
+    const key =
+      typeof value === "string" && /^[a-z][a-z0-9_]{0,79}$/.test(value)
+        ? value
+        : "unknown";
+    Object.defineProperty(map, key, {
+      value: (Object.hasOwn(map, key) ? map[key]! : 0) + 1,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+  };
   for (const line of text.split("\n")) {
     if (!line.trim()) continue;
     let value: unknown;
@@ -22,10 +50,35 @@ export function countAudit(text: string): Counts {
       (value.decision !== "allow" && value.decision !== "ask")
     )
       throw new Error("Audit file contains an invalid decision record");
+    if ("reviewCalls" in value) {
+      if (
+        typeof value.reviewCalls !== "number" ||
+        !Number.isSafeInteger(value.reviewCalls) ||
+        value.reviewCalls < 0
+      )
+        throw new Error("Audit file contains an invalid review count");
+      if (value.reviewCalls > 0) counts.reviewerReached++;
+      else counts.reviewerSkipped++;
+    } else if (
+      "reviewerDecision" in value &&
+      (value.reviewerDecision === "allow" || value.reviewerDecision === "ask")
+    ) {
+      counts.reviewerReached++;
+    } else counts.reviewerUnknown++;
+    increment(counts.reasons, "reason" in value ? value.reason : undefined);
+    increment(
+      counts.details,
+      "detailCode" in value ? value.detailCode : undefined,
+    );
     counts.total++;
     counts[value.decision]++;
   }
   return counts;
+}
+
+export function countAudit(text: string): Counts {
+  const { total, allow, ask } = summarizeAudit(text);
+  return { total, allow, ask };
 }
 
 if (
@@ -38,12 +91,34 @@ if (
     process.exit(path === "--help" ? 0 : 2);
   }
   try {
-    const { total, allow, ask } = countAudit(readFileSync(path, "utf8"));
+    const summary = summarizeAudit(readFileSync(path, "utf8"));
+    const {
+      total,
+      allow,
+      ask,
+      reviewerReached,
+      reviewerSkipped,
+      reviewerUnknown,
+    } = summary;
     console.log(`Audit file: ${path}`);
     console.log(
       `Automatic approvals: ${allow} / ${total} (${total ? ((allow / total) * 100).toFixed(1) : "0.0"}%)`,
     );
     console.log(`Sent to native approval: ${ask} / ${total}`);
+    const known = reviewerReached + reviewerSkipped;
+    console.log(
+      `Reached reviewer: ${reviewerReached} / ${known} known (${known ? ((reviewerReached / known) * 100).toFixed(1) : "0.0"}%); unknown: ${reviewerUnknown}`,
+    );
+    for (const [label, counts] of [
+      ["Reasons", summary.reasons],
+      ["Details", summary.details],
+    ] as const) {
+      console.log(`${label}:`);
+      for (const [code, count] of Object.entries(counts).sort(
+        ([a, x], [b, y]) => y - x || a.localeCompare(b),
+      ))
+        console.log(`  ${code}: ${count}`);
+    }
     console.log(
       "Scope: shell evaluations audited by this plugin; native denies and later human decisions are excluded.",
     );

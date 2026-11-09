@@ -201,8 +201,9 @@ requires a fresh model decision. Unload clears all state; there is no approval c
 Audit adds `reviewCalls`, `evidenceCount`, and validated `reviewerReasonCode` to
 reviewer decision/risk metadata. Fixed local codes distinguish unavailable,
 sensitive or oversized evidence, no progress, call budgets, invalid references,
-changed evidence and policy escalation. No commands, paths, queries, contents,
-provider prose or session identifiers are logged.
+changed evidence and policy escalation. Audit records include native session IDs and, by default, exact captured commands
+(which may contain paths or secrets). Set `logging.includeCommands: false` to omit
+command text. Evidence queries, file contents and provider prose are not logged.
 
 ## Expanded trust boundary
 

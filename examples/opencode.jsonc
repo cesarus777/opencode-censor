@@ -17,7 +17,7 @@
         "logging": {
           "enabled": true,
           "level": "info",
-          "includeCommands": false,
+          "includeCommands": true,
         },
         "cache": { "enabled": false },
       },

@@ -60,6 +60,11 @@ describe("decision parser", () => {
 describe("configuration", () => {
   test("defaults are conservative and model is independent", () => {
     const config = parseConfig(options);
+    expect(config.logging.includeCommands).toBe(true);
+    expect(
+      parseConfig({ ...options, logging: { includeCommands: false } }).logging
+        .includeCommands,
+    ).toBe(false);
     expect(config.mode).toBe("balanced");
     expect(config.context.enabled).toBe(false);
     expect(config.cache.enabled).toBe(false);
@@ -73,7 +78,7 @@ describe("configuration", () => {
       {},
       { ...options, fallback: "allow" },
       { ...options, cache: { enabled: true } },
-      { ...options, logging: { includeCommands: true } },
+      { ...options, logging: { includeCommands: "true" } },
       { ...options, timeoutMs: 0 },
       { ...options, timeoutMs: Infinity },
       { ...options, mode: "fast" },

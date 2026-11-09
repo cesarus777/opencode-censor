@@ -17,7 +17,7 @@ The trusted computing base includes OpenCode's rule evaluation, scanner and perm
 - The response parser rejects extra fields, nested values, duplicate keys, invalid values, unknown decisions and ambiguous/contradictory allow explanations. Risk, reason and local policy checks are independent of confidence.
 - Only commands eligible for the configured local strategy cross the provider boundary. A sensitive-data tripwire supplements the grammar. Optional context transmits fixed intent labels rather than original text or file contents.
 - Per-evaluation deadlines, lifecycle cancellation and a bound of eight unsettled tasks prevent indefinite UI waiting and unbounded model requests. Late results cannot change returned effects.
-- Audit file records use fixed local reason codes. File write failures can make counts incomplete but cannot change a permission result. No commands, histories, model output, raw error messages, credentials or analytics are logged by this plugin.
+- Audit file records use fixed local reason/detail codes, stages, effective settings and bounded numeric diagnostics; see [the audit reference](docs/AUDIT.md). File write failures can make counts incomplete but cannot change a permission result. Records include native session IDs and, by default, exact captured commands. Commands can contain credentials, paths and other private data. Set `logging.includeCommands: false` to omit command text; disable logging to omit all audit records. Raw history, model output and error messages are not logged.
 
 ## Opt-in stateful project review
 
@@ -47,7 +47,7 @@ are native input, root workdir and scanner resources. Multiple scanner fragments
 are supplemental only; the captured complete command is supplied independently.
 Prior findings are withheld until their evidence is freshly reacquired and matches
 its fingerprints. Temporary state is bounded, expires and never caches approvals.
-Audit remains fixed metadata without commands, file contents or provider prose.
+Audit includes session IDs and optional exact commands, but no evidence file contents or provider prose.
 See [the protocol, configuration and limits](docs/STATEFUL.md).
 
 ## Boundaries and residual risks
@@ -62,7 +62,7 @@ The current text API has no provider-enforced system/data split or JSON-schema o
 
 The SDK's local Promise adapter currently ignores generation cancellation options. The native smoke with a controlled loopback HTTP provider observed zero provider abort events after deadlines and reload. Timed-out calls can continue incurring costs. Eight stuck calls exhaust review capacity until reload; further requests ask rather than opening more calls. Context history is fetched locally in full because the native endpoint lacks a limit; only local scanning and transmitted labels are bounded.
 
-The sensitive-data tripwire is heuristic. The default closed command vocabulary and label-only context avoid forwarding arbitrary supplied strings; opt-in stateful review additionally discloses selected file contents, but a user must still trust their model provider, native provider hooks/diagnostics and OpenCode configuration. Audit sinks outside this plugin may have their own retention policies. Correlation holds temporary tool input references in bounded memory until tool completion, later pruning, or unload; no command history is persisted by the plugin.
+The sensitive-data tripwire is heuristic. The default closed command vocabulary and label-only context avoid forwarding arbitrary supplied strings; opt-in stateful review additionally discloses selected file contents, but a user must still trust their model provider, native provider hooks/diagnostics and OpenCode configuration. Audit sinks outside this plugin may have their own retention policies. Correlation holds temporary tool input references in bounded memory until tool completion, later pruning, or unload; audit logging persists captured commands by default until the operator removes or rotates the audit file.
 
 Only shell permission events are protected. Direct terminals, arbitrary plugin code, MCP tools, alternate execution mechanisms and permissions that OpenCode does not emit are outside scope. The plugin never calls `permission.reply`, launches a shell, or retries an execution.
 

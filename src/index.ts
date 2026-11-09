@@ -39,14 +39,16 @@ export default Plugin.define({
       reviewer: (config) => nativeReviewer(ctx, config),
       command(event: PermissionEvent) {
         const source = event.source;
-        if (!source) return undefined;
+        if (!source) return { detailCode: "missing_source_identifiers" };
         const call = calls.get(
           key(event.sessionID, source.messageID, source.id),
         );
-        if (!call || call.expires < Date.now()) return undefined;
+        if (!call) return { detailCode: "capture_missing" };
+        if (call.expires < Date.now()) return { detailCode: "capture_expired" };
         const workdir = call.input.workdir;
         if (workdir !== undefined) {
-          if (typeof workdir !== "string") return undefined;
+          if (typeof workdir !== "string")
+            return { detailCode: "invalid_workdir" };
           // Project snapshots are rooted at the project directory, so stateful
           // review rejects a different working directory, including later edits.
           if (
@@ -54,7 +56,7 @@ export default Plugin.define({
             resolve(ctx.location.directory, workdir) !==
               resolve(ctx.location.directory)
           )
-            return undefined;
+            return { detailCode: "stateful_workdir_mismatch" };
           const path = relative(
             ctx.location.directory,
             resolve(ctx.location.directory, workdir),
@@ -65,11 +67,11 @@ export default Plugin.define({
             path.startsWith("..\\") ||
             isAbsolute(path)
           )
-            return undefined;
+            return { detailCode: "external_workdir" };
         }
         return typeof call.input.command === "string"
           ? call.input.command
-          : undefined;
+          : { detailCode: "invalid_command" };
       },
       async context(sessionID, config) {
         const messages = await ctx.session.context({ sessionID });

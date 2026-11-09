@@ -29,26 +29,35 @@ interface SessionState {
   expires: number;
   findings: Finding[];
 }
-export function projectEligible(input: ReviewInput, config: Config): boolean {
+export function projectFailure(
+  input: ReviewInput,
+  config: Config,
+): string | undefined {
+  if (config.review.strategy !== "stateful") return "stateful_disabled";
+  if (!input.command.trim()) return "command_empty";
+  if (input.command.length > 8192) return "command_too_long";
+  if (input.resources.length === 0) return "resources_missing";
+  if (input.resources.length > 32) return "too_many_resources";
   const strings = [input.command, ...input.resources];
-  return (
-    config.review.strategy === "stateful" &&
-    !!input.command.trim() &&
-    input.command.length <= 8192 &&
-    input.resources.length > 0 &&
-    input.resources.length <= 32 &&
-    strings.reduce((sum, value) => sum + value.length, 0) <= 16384 &&
-    strings.every(
-      (value) =>
-        !containsSensitiveData(value) &&
-        !/[\u0000-\u0008\u000b-\u001f\u007f]/.test(value),
-    ) &&
-    (config.review.allowShellSyntax ||
-      !/[\\\n;&|`$<>(){}]/.test(input.command)) &&
-    !config.review.alwaysAsk.some((fragment) =>
-      input.command.includes(fragment),
-    )
-  );
+  if (strings.reduce((sum, value) => sum + value.length, 0) > 16384)
+    return "input_budget_exceeded";
+  if (strings.some((value) => containsSensitiveData(value)))
+    return "sensitive_input";
+  if (strings.some((value) => /[\u0000-\u0008\u000b-\u001f\u007f]/.test(value)))
+    return "control_characters";
+  if (
+    !config.review.allowShellSyntax &&
+    /[\\\n;&|`$<>(){}]/.test(input.command)
+  )
+    return "shell_syntax_disabled";
+  if (
+    config.review.alwaysAsk.some((fragment) => input.command.includes(fragment))
+  )
+    return "always_ask_match";
+  return undefined;
+}
+export function projectEligible(input: ReviewInput, config: Config): boolean {
+  return projectFailure(input, config) === undefined;
 }
 export class ProjectLoop {
   private readonly sessions = new Map<string, SessionState>();
@@ -66,6 +75,7 @@ export class ProjectLoop {
     input: ReviewInput,
     sessionID: string,
     signal: AbortSignal,
+    onProgress?: (stage: "reviewer" | "evidence" | "recheck") => void,
   ): Promise<Outcome> {
     const commandHash = createHash("sha256")
       .update(input.command)
@@ -125,16 +135,15 @@ export class ProjectLoop {
       calls++;
       let text: string;
       try {
-        text = await this.reviewer.generate(
-          buildProjectPrompt(
-            input,
-            results,
-            previousFiles,
-            verifiedFindings,
-            this.config,
-          ),
-          signal,
+        const prompt = buildProjectPrompt(
+          input,
+          results,
+          previousFiles,
+          verifiedFindings,
+          this.config,
         );
+        onProgress?.("reviewer");
+        text = await this.reviewer.generate(prompt, signal);
       } catch {
         return stop("review_error");
       }
@@ -151,12 +160,14 @@ export class ProjectLoop {
         if (calls >= this.config.review.maxModelCalls)
           return stop("review_budget");
         requests.add(key);
+        onProgress?.("evidence");
         const result = await evidence.request(response);
         results.push(result);
         if (!current()) return stop("cancelled");
         continue;
       }
       const metadata = {
+        reviewerConfidence: response.confidence,
         reviewerDecision: response.decision,
         reviewerRiskLevel: response.riskLevel,
         reviewerReasonCode: response.reasonCode,
@@ -190,6 +201,7 @@ export class ProjectLoop {
         )
       )
         return { ...stop("project_incomplete"), ...metadata };
+      onProgress?.("recheck");
       if (!(await evidence.unchanged()))
         return { ...stop("project_changed"), ...metadata };
       if (!current()) return stop("cancelled");
@@ -244,6 +256,24 @@ export class ProjectLoop {
           allowed ? "project_review_allowed" : "project_requires_approval",
           false,
         ),
+        stage: "reviewer",
+        detailCode: allowed
+          ? "project_review_allowed"
+          : response.decision !== "allow"
+            ? "reviewer_requested_approval"
+            : response.riskLevel !== "low"
+              ? "reviewer_risk_above_low"
+              : response.uncertain
+                ? "reviewer_uncertain"
+                : response.reasonCode !== "understood_operation"
+                  ? "reviewer_reason_not_approved"
+                  : response.effects.includes("unknown")
+                    ? "reviewer_unknown_effects"
+                    : response.effects.some((effect) =>
+                          this.config.review.forbiddenEffects.includes(effect),
+                        )
+                      ? "reviewer_forbidden_effect"
+                      : "reviewer_confidence_below_floor",
         decision: allowed ? "allow" : "ask",
         riskLevel: response.riskLevel,
         ...metadata,

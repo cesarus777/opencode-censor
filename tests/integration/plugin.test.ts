@@ -1,7 +1,7 @@
-import { mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
+import { mkdtemp, writeFile, readFile, rm, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { expect, test } from "bun:test";
+import { expect, test, spyOn } from "bun:test";
 import type { Plugin } from "@opencode/plugin";
 import plugin from "../../src/index.js";
 import { createGate } from "../../src/core/permission-gate.js";
@@ -439,6 +439,70 @@ test("stateful adapter correlates source, enforces root workdir, and rechecks pe
     };
     await mock.emit("evaluate", denied);
     expect(denied.effect).toBe("deny");
+  } finally {
+    await cleanup?.();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("native source failures produce distinct audit diagnostics without changing asks", async () => {
+  const root = await mkdtemp(join(tmpdir(), "censor-source-audit-"));
+  const file = join(root, "audit.jsonl");
+  const mock = host({
+    options: { ...options, logging: { enabled: true, file } },
+  });
+  const cleanup = await plugin.setup(mock.ctx);
+  try {
+    await mock.emit("evaluate", { ...event(), source: undefined });
+    await mock.emit("evaluate", event());
+    await mock.before("ls", "c1", "/outside");
+    await mock.emit("evaluate", event(["ls"]));
+    await mock.emit("execute.before", {
+      tool: "shell",
+      sessionID: "s1",
+      messageID: "m1",
+      id: "c1",
+      input: { command: "ls", workdir: 42 },
+    });
+    await mock.emit("evaluate", event(["ls"]));
+    await mock.emit("execute.before", {
+      tool: "shell",
+      sessionID: "s1",
+      messageID: "m1",
+      id: "c1",
+      input: { command: 42 },
+    });
+    await mock.emit("evaluate", event(["ls"]));
+    await mock.before("ls");
+    const now = Date.now();
+    const clock = spyOn(Date, "now").mockReturnValue(now + 60001);
+    try {
+      await mock.emit("evaluate", event(["ls"]));
+    } finally {
+      clock.mockRestore();
+    }
+    const records = (await readFile(file, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(records.map((record) => record.detailCode)).toEqual([
+      "missing_source_identifiers",
+      "capture_missing",
+      "external_workdir",
+      "invalid_workdir",
+      "invalid_command",
+      "capture_expired",
+    ]);
+    for (const record of records)
+      expect(record).toMatchObject({
+        reason: "missing_full_command",
+        decision: "ask",
+        reviewCalls: 0,
+        stage: "source",
+        sessionID: "s1",
+        schemaVersion: 2,
+      });
+    expect(mock.stats().calls).toBe(0);
   } finally {
     await cleanup?.();
     await rm(root, { recursive: true, force: true });

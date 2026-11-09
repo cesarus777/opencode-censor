@@ -7,14 +7,19 @@ import {
   type ReviewInput,
 } from "../types.js";
 
+export function inspectionFailure(
+  input: ReviewInput,
+  mode: Mode,
+): string | undefined {
+  // Preserve the exact eligibility checks and their order.
+  if (input.resources.length === 0) return "resources_missing";
+  if (input.resources.length !== 1) return "multiple_resources";
+  if (input.resources[0] !== input.command) return "resource_command_mismatch";
+  if (!candidate(input.command, mode)) return "command_outside_grammar";
+  return undefined;
+}
 export function eligible(input: ReviewInput, mode: Mode): boolean {
-  // Resources are scanner fragments, never proof of complete source. Require an
-  // independently captured tool command and a single identical scanner resource.
-  return (
-    input.resources.length === 1 &&
-    input.resources[0] === input.command &&
-    candidate(input.command, mode)
-  );
+  return inspectionFailure(input, mode) === undefined;
 }
 export function applyPolicy(
   input: ReviewInput,
@@ -22,7 +27,13 @@ export function applyPolicy(
   mode: Mode,
 ): Outcome {
   const floor = { strict: 0.98, balanced: 0.9, permissive: 0.8 }[mode];
-  if (!eligible(input, mode)) return ask("policy_requires_review", false);
+  const failure = inspectionFailure(input, mode);
+  if (failure)
+    return {
+      ...ask("policy_requires_review", false),
+      stage: "policy",
+      detailCode: failure,
+    };
   if (
     review.decision !== "allow" ||
     review.riskLevel !== "low" ||
@@ -31,6 +42,13 @@ export function applyPolicy(
     return {
       ...ask("review_requires_approval", false),
       riskLevel: review.riskLevel,
+      stage: "reviewer",
+      detailCode:
+        review.decision !== "allow"
+          ? "reviewer_requested_approval"
+          : review.riskLevel !== "low"
+            ? "reviewer_risk_above_low"
+            : "reviewer_confidence_below_floor",
     };
   return { ...review, code: "review_allowed", fallback: false };
 }

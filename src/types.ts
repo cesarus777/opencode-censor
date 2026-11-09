@@ -1,3 +1,5 @@
+import type { AuditStage } from "./observability/diagnostics.js";
+
 export type Mode = "strict" | "balanced" | "permissive";
 export type ReviewDecision = {
   decision: "allow" | "ask";
@@ -6,6 +8,9 @@ export type ReviewDecision = {
   confidence?: number;
 };
 export type Outcome = ReviewDecision & {
+  stage?: AuditStage;
+  detailCode?: string;
+  reviewerConfidence?: number;
   code: string;
   fallback: boolean;
   reviewerDecision?: ReviewDecision["decision"];
