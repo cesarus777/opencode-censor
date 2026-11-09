@@ -1,6 +1,6 @@
 # Security policy
 
-This plugin is a permission reviewer, not an execution sandbox. No absolute safety guarantee is made. Version 0.3.0 targets OpenCode 2.2.5; host and provider acceptance testing must be completed before relying on it in production.
+This plugin is a permission reviewer, not an execution sandbox. No absolute safety guarantee is made. Version 0.3.1 targets OpenCode 2.2.5; host and provider acceptance testing must be completed before relying on it in production.
 
 ## Threat model
 

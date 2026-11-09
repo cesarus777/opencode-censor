@@ -2,7 +2,7 @@
 
 A native OpenCode V2 server plugin that asks a separately selected model to review shell permissions before execution. The model can recommend `allow` or `ask`; OpenCode executes the action and owns the approval interface. The plugin contains no shell executor, agent, terminal, backend, or approval UI.
 
-Release 0.3.0 targets **OpenCode / `@opencode/plugin` 2.2.5** and defaults to a small set of inspection commands. This is a security-sensitive initial release candidate. Package import and mocked integration are distinct from a live provider test; see [verification](docs/VERIFICATION.md) and [SDK research](docs/RESEARCH.md).
+Release 0.3.1 targets **OpenCode / `@opencode/plugin` 2.2.5** and defaults to a small set of inspection commands. This is a security-sensitive initial release candidate. Package import and mocked integration are distinct from a live provider test; see [verification](docs/VERIFICATION.md) and [SDK research](docs/RESEARCH.md).
 
 ## How it works
 
@@ -43,7 +43,7 @@ OpenCode can install the package directly from configuration; no source copying 
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "@cesarus777/opencode-censor@0.3.0",
+      "package": "@cesarus777/opencode-censor@0.3.1",
       "options": {
         "model": { "providerID": "anthropic", "id": "MODEL_ID" },
       },
@@ -61,7 +61,7 @@ OpenCode can install the package directly from configuration; no source copying 
 
 For **global** activation, put the configuration in `~/.config/opencode/opencode.jsonc`. For **project** activation, put it in `<project>/opencode.jsonc` or `<project>/.opencode/opencode.jsonc`. Merge entries with existing configuration; do not duplicate the plugin. OpenCode's managed configuration and rule precedence still apply. Keep independent hard-deny rules for operations that must never run.
 
-`@cesarus777/opencode-censor@0.3.0` adds hybrid routing, project subdirectory support and bounded project queues, retaining opt-in stateful review and provider checks. Publication status is recorded in [verification](docs/VERIFICATION.md). The earlier unscoped `opencode-censor` package is deprecated: replace its configuration entry with `@cesarus777/opencode-censor@0.3.0` and do not load both packages. The plugin ID remains `opencode-censor`. See [verification](docs/VERIFICATION.md) for publication status, accepted dependency risks and deferred deployment checks.
+`@cesarus777/opencode-censor@0.3.1` adds hybrid routing, project subdirectory support and bounded project queues, retaining opt-in stateful review and provider checks. Publication status is recorded in [verification](docs/VERIFICATION.md). The earlier unscoped `opencode-censor` package is deprecated: replace its configuration entry with `@cesarus777/opencode-censor@0.3.1` and do not load both packages. The plugin ID remains `opencode-censor`. See [verification](docs/VERIFICATION.md) for publication status, accepted dependency risks and deferred deployment checks.
 
 ## Install local source or a tarball
 
@@ -96,12 +96,12 @@ To distribute a standalone archive:
 ```sh
 bun run build
 npm pack
-npm install --prefix /path/to/plugins ./cesarus777-opencode-censor-0.3.0.tgz
+npm install --prefix /path/to/plugins ./cesarus777-opencode-censor-0.3.1.tgz
 ```
 
 Set `plugins[].package` to `/path/to/plugins/node_modules/@cesarus777/opencode-censor`. The installed package contains compiled JavaScript, declarations, license, documentation and examples; it does not require copying this repository into each project.
 
-Version 0.3.0 implements the [development workflow plan](docs/DEVELOPMENT-WORKFLOW-PLAN.md): explicit hybrid review, project subdirectory working directories and bounded project review queues. Use [the development configuration](examples/opencode-development.jsonc) to select hybrid; the default remains stateless. See [verification](docs/VERIFICATION.md) for staging and public availability.
+Version 0.3.1 implements the [development workflow plan](docs/DEVELOPMENT-WORKFLOW-PLAN.md): explicit hybrid review, project subdirectory working directories and bounded project review queues. Use [the development configuration](examples/opencode-development.jsonc) to select hybrid; the default remains stateless. See [verification](docs/VERIFICATION.md) for staging and public availability.
 
 Hybrid routes an eligible closed-grammar inspection with matching complete source
 and scanner resource to the existing stateless reviewer. It requires no project
@@ -273,7 +273,7 @@ The separate original-scanner phase preserves the native shell tool, records the
 
 Source and non-sensitive bug reports: [cesarus777/opencode-censor](https://github.com/cesarus777/opencode-censor). Security reports must follow [SECURITY.md](SECURITY.md). Before publishing, complete or explicitly defer the checklist items, triage dependency advisories, confirm npm account access and inspect/install the final archive. Private reporting and deployment verification remain outstanding; the two moderate dependency advisories are explicitly accepted. `npm view` checks availability, not ownership. See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
-The build and test scripts do not stage or publish. The [staging workflow](.github/workflows/publish.yml) stages a verified archive when a stable version tag is pushed, or when manually run on `main` with the matching package version. It runs the full checks and native smoke, then inspects and installs the exact archive it stages with lifecycle scripts disabled. A maintainer must approve the staged package with 2FA on npm before it becomes public. For `0.3.0`, push tag `v0.3.0` or run the workflow manually on `main` with version `0.3.0`.
+The build and test scripts do not stage or publish. The [staging workflow](.github/workflows/publish.yml) stages a verified archive when a stable version tag is pushed, or when manually run on `main` with the matching package version. It runs the full checks and native smoke, then inspects and installs the exact archive it stages with lifecycle scripts disabled. A maintainer must approve the staged package with 2FA on npm before it becomes public. For `0.3.1`, push tag `v0.3.1` or run the workflow manually on `main` with version `0.3.1`.
 
 Before the first Actions publication, configure a GitHub Actions trusted publisher in the **scoped package's** npm Settings: owner `cesarus777`, repository `opencode-censor`, workflow filename `publish.yml`, and no environment name. A publisher configured for the old unscoped package does not transfer. Allow `npm stage publish` (enabled by default). The workflow uses Node 24, GitHub-hosted runners and OIDC; no `NPM_TOKEN` secret is needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
 

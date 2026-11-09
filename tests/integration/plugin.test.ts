@@ -230,12 +230,17 @@ test("gate catches unexpected command lookup errors", async () => {
 });
 test("native deny set during asynchronous review is preserved", async () => {
   let finish!: (text: string) => void;
+  let started!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    started = resolve;
+  });
   const gate = createGate({
     options,
     reviewer: () => ({
       generate: () =>
         new Promise((resolve) => {
           finish = resolve;
+          started();
         }),
     }),
     command: () => "pwd",
@@ -243,7 +248,7 @@ test("native deny set during asynchronous review is preserved", async () => {
   });
   const value: PermissionEvent = event();
   const pending = gate.evaluate(value);
-  await Bun.sleep(1);
+  await ready;
   value.effect = "deny";
   finish(allowed);
   await pending;
@@ -295,12 +300,17 @@ test("overlapping native evaluations do not exchange reviewer decisions", async 
 });
 test("unload settles a native in-flight allow as ask", async () => {
   let finish!: (value: { text: string }) => void;
+  let started!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    started = resolve;
+  });
   const mock = host({
     experimental: {
       generate: {
         text: () =>
           new Promise((resolve) => {
             finish = resolve;
+            started();
           }),
       },
     },
@@ -309,7 +319,7 @@ test("unload settles a native in-flight allow as ask", async () => {
   await mock.before("pwd");
   const value = event();
   const pending = mock.emit("evaluate", value);
-  await Bun.sleep(1);
+  await ready;
   await cleanup?.();
   await pending;
   expect(value.effect).toBe("ask");
@@ -319,12 +329,17 @@ test("unload settles a native in-flight allow as ask", async () => {
 });
 test("source mutation while model review is pending cannot reuse an allow", async () => {
   let finish!: (value: { text: string }) => void;
+  let started!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    started = resolve;
+  });
   const mock = host({
     experimental: {
       generate: {
         text: () =>
           new Promise((resolve) => {
             finish = resolve;
+            started();
           }),
       },
     },
@@ -340,7 +355,7 @@ test("source mutation while model review is pending cannot reuse an allow", asyn
   });
   const value = event();
   const pending = mock.emit("evaluate", value);
-  await Bun.sleep(1);
+  await ready;
   input.command = "pwd; unsafe";
   finish({ text: allowed });
   await pending;

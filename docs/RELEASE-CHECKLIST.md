@@ -1,10 +1,22 @@
+# Version 0.3.1 acceptance supplement
+
+- [x] Reproduce the 0.3.0 staging test failure on a single CPU and replace fixed startup sleeps with explicit reviewer readiness.
+- [x] Validate the retry archive and native probe locally: 202 tests, 30 single-CPU adapter repetitions, 74 archive files, isolated imports and the installed native probe.
+- [ ] Commit and deploy v0.3.1, then verify remote staging.
+- [ ] Verify successful remote npm staging.
+- [ ] Maintainer approves the staged package with npm 2FA and public availability is confirmed.
+
+The failed `v0.3.0` tag remains unchanged. Its main/tag CI passed, but staging
+stopped during validation and did not reach npm. All deferred acceptance below
+remains outstanding.
+
 # Version 0.3.0 acceptance supplement
 
 - [x] Reject native home-relative workdirs before review; cover literal `~/app` directories and pending workdir mutation.
 - [x] Retain hybrid routing, workdir containment, bounded FIFO queues and fixed audit diagnostics from the development workflow implementation.
 - [x] Confirm public npm package owner (`cesarus777`) and latest version (0.2.0) before staging 0.3.0.
 - [x] Complete final local package validation (202 tests; archive inspection and isolated Bun/Node imports) and installed-archive native probe for 0.3.0.
-- [ ] Commit and push the reviewed source, then trigger and verify tag-based npm staging.
+- [x] Commit and push the reviewed 0.3.0 source and trigger staging; CI passed, but staging failed at the lifecycle test race and is retried in 0.3.1.
 - [ ] Maintainer approves the staged package with npm 2FA and public 0.3.0 availability is confirmed.
 
 Remote-provider, interactive-client and private reporting acceptance remain

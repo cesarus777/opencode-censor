@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 — lifecycle test synchronization (2026-11-09)
+
+- Wait for explicit reviewer readiness in native unload, source-mutation and deny-preservation tests instead of assuming asynchronous workdir checks finish within 1 ms.
+- Retry the development workflow release after the 0.3.0 staging job stopped at that test race; retain the failed 0.3.0 tag unchanged.
+
 ## 0.3.0 — development workflow (2026-11-09)
 
 - Add explicit hybrid review: stateless inspection and opt-in project evidence review, without alternate-path retries.

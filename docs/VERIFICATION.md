@@ -1,3 +1,30 @@
+# Version 0.3.1 release retry — 2026-11-09
+
+Commit `eda9919` and annotated tag `v0.3.0` were pushed for the authorized release.
+[Main CI](https://github.com/cesarus777/opencode-censor/actions/runs/42648205298)
+and [tag CI](https://github.com/cesarus777/opencode-censor/actions/runs/42648205165)
+passed. [Npm staging run 42648205386](https://github.com/cesarus777/opencode-censor/actions/runs/42648205386)
+failed in package validation: 201 tests passed and the unload test failed because
+its reviewer completion callback had not yet been assigned. No npm staging step ran.
+
+The GitHub log API returned 403 without Actions authentication; the operator
+supplied the failing test summary. The same `finish is not a function` failure was
+reproduced locally on the first single-CPU adapter test run, after 20 normal suite
+runs passed. Async workdir validation invalidated the old 1 ms startup assumption.
+Unload, pending source mutation and native-deny tests now await explicit reviewer
+readiness. Permission behavior is unchanged by this test-only follow-up.
+
+The failed tag is preserved. Version 0.3.1 will retry the existing verified archive
+staging workflow; maintainer npm 2FA approval is still required before publication.
+Retry validation passed with Bun 1.3.11 and Node 26.11.1: frozen installation,
+typecheck, formatting, 202 tests (634 assertions) and build. All 30 single-CPU
+adapter repetitions passed after the synchronization fix. Sandboxed npm pack
+again returned no report; the escalated standalone check passed all 74 archive
+files, isolated installation and Bun/Node ESM imports. The 0.3.1 installed-package
+native probe passed, including all 13 original-scanner fixtures intercepted before
+process creation and generic evidence review; provider abort observations were zero.
+Remote staging will be recorded after completion.
+
 # Version 0.3.0 release preflight — 2026-11-09
 
 The operator authorized resolving the home-workdir review finding, updating
